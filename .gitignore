@@ -1,0 +1,17 @@
+# ignore SVN files
+**/.svn
+
+# ignore generated binary files
+Makefile.dep
+bootimg
+mp3.img
+*.o
+*.exe
+
+# ignore binary files included in SVN repository
+fsdir
+syscalls/to_fsdir
+fish/fish
+createfs
+elfconvert
+*img

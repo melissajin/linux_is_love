@@ -1,0 +1,7 @@
+text=auto
+
+# text files
+*.c text
+*.h text
+*.txt text
+*.sh text
