@@ -6,6 +6,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "devices/keyboard.h"
 #include "debug.h"
 
 /* Macros. */
@@ -162,4 +163,3 @@ entry (unsigned long magic, unsigned long addr)
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");
 }
-
