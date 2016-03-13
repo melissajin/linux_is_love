@@ -16,7 +16,7 @@ i8259_init(void)
 {
 
 	/* Save masks */
-	master_mask = inb(MASTER_8259_PORT_DATA);
+	master_mask = inb(MASTER_8259_PORT_DATA); 
 	slave_mask = inb(SLAVE_8259_PORT_DATA);
 
 	/* ICW1: Start PIC initization sequence, no ICW4, 2 PICs, edge triggered */
@@ -41,19 +41,53 @@ i8259_init(void)
 }
 
 /* Enable (unmask) the specified IRQ */
+/* Source: wiki.osdev.org/8259_PIC#Initialisation */
 void
 enable_irq(uint32_t irq_num)
 {
+	uint16_t port;
+	uint8_t value;
+
+	if(irq_num < 8){
+		port = MASTER_8259_PORT_DATA;
+	}
+	else{
+		port = SLAVE_8259_PORT_DATA;
+		irq_num -= 8;
+	}
+
+	value = inb(port) & ~(1 << irq_num);
+	outb(port, value);
 }
 
 /* Disable (mask) the specified IRQ */
+/* Source: wiki.osdev.org/8259_PIC#Initialisation */
 void
 disable_irq(uint32_t irq_num)
 {
+	uint16_t port;
+	uint8_t value;
+
+	if(irq_num < 8){
+		port = MASTER_8259_PORT_DATA;
+	}
+	else{
+		port = SLAVE_8259_PORT_DATA;
+		irq_num -= 8;
+	}
+
+	value = inb(port) | (1 << irq_num);
+	outb(port, value);
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
+/* Source: wiki.osdev.org/8259_PIC#Initialisation */
 void
 send_eoi(uint32_t irq_num)
 {
+	if(irq_num >= 8){
+		outb(SLAVE_8259_PORT, EOI); /* Send EOI to slave pic */
+	}
+	outb(MASTER_8259_PORT, EOI) /* Send EOI to master pic */
 }
+
