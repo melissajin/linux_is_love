@@ -13,6 +13,7 @@ uint8_t slave_mask; /* IRQs 8-15 */
 /* Initialize the 8259 PIC */
 void
 i8259_init(void)
+{
 
 	/* Save masks */
 	master_mask = inb(MASTER_8259_PORT_DATA); 
@@ -33,7 +34,7 @@ i8259_init(void)
 	/* ICW4 */
 	outb(MASTER_8259_PORT_DATA, ICW4);
 	outb(SLAVE_8259_PORT_DATA, ICW4);
-	
+
 	/* Restore masks */
 	outb(MASTER_8259_PORT_DATA, master_mask);
 	outb(SLAVE_8259_PORT_DATA, slave_mask);
