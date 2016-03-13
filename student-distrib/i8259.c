@@ -20,24 +20,24 @@ i8259_init(void)
 	slave_mask = inb(SLAVE_8259_PORT_DATA);
 
 	/* ICW1: Start PIC initization sequence, no ICW4, 2 PICs, edge triggered */
-	outb(MASTER_8259_PORT, ICW1);
-	outb(SLAVE_8259_PORT, ICW1);
+	outb(ICW1, MASTER_8259_PORT);
+	outb(ICW1, SLAVE_8259_PORT);
 
 	/* ICW2: map master IRQ0-7 to 0x20-0x27, slave IRQ0-7 to 0x28-0x2f for IRQs */
-	outb(MASTER_8259_PORT_DATA, ICW2_MASTER);
-	outb(SLAVE_8259_PORT_DATA, ICW2_SLAVE);
+	outb(ICW2_MASTER, MASTER_8259_PORT_DATA);
+	outb(ICW2_SLAVE, SLAVE_8259_PORT_DATA);
 
 	/* ICW3: tell master that slave is IRQ2, tell slave its identity */
-	outb(MASTER_8259_PORT_DATA, ICW3_MASTER);
-	outb(SLAVE_8259_PORT_DATA, ICW3_SLAVE);
+	outb(ICW3_MASTER, MASTER_8259_PORT_DATA);
+	outb(ICW3_SLAVE, SLAVE_8259_PORT_DATA);
 
 	/* ICW4 */
-	outb(MASTER_8259_PORT_DATA, ICW4);
-	outb(SLAVE_8259_PORT_DATA, ICW4);
+	outb(ICW4, MASTER_8259_PORT_DATA);
+	outb(ICW4, SLAVE_8259_PORT_DATA);
 
 	/* Restore masks */
-	outb(MASTER_8259_PORT_DATA, master_mask);
-	outb(SLAVE_8259_PORT_DATA, slave_mask);
+	outb(master_mask, MASTER_8259_PORT_DATA);
+	outb(slave_mask, SLAVE_8259_PORT_DATA);
 }
 
 /* Enable (unmask) the specified IRQ */
@@ -57,7 +57,7 @@ enable_irq(uint32_t irq_num)
 	}
 
 	value = inb(port) & ~(1 << irq_num);
-	outb(port, value);
+	outb(value, port);
 }
 
 /* Disable (mask) the specified IRQ */
@@ -77,7 +77,7 @@ disable_irq(uint32_t irq_num)
 	}
 
 	value = inb(port) | (1 << irq_num);
-	outb(port, value);
+	outb(value, port);
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
@@ -86,8 +86,8 @@ void
 send_eoi(uint32_t irq_num)
 {
 	if(irq_num >= 8){
-		outb(SLAVE_8259_PORT, EOI); /* Send EOI to slave pic */
+		outb(EOI, SLAVE_8259_PORT); /* Send EOI to slave pic */
 	}
-	outb(MASTER_8259_PORT, EOI) /* Send EOI to master pic */
+	outb(EOI, MASTER_8259_PORT) /* Send EOI to master pic */
 }
 
