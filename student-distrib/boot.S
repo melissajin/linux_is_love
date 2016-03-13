@@ -25,7 +25,13 @@ _start:
 
 continue:
 	# Load the GDT
-
+	lgdt GDT
+	mov 0x10, %ax
+	mov %ax, %ds
+	mov %ax, %es 
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ax
 	# Load CS with the new descriptor value
 	ljmp    $KERNEL_CS, $keep_going
 
