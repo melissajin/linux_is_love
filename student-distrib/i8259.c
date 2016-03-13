@@ -20,17 +20,21 @@ i8259_init(void)
 	master_mask = inb(MASTER_8259_PORT_DATA); 
 	slave_mask = inb(SLAVE_8259_PORT_DATA);
 
-	/* Start PIC initization sequence (cascade mode) */
+	/* ICW1: Start PIC initization sequence, no ICW4, 2 PICs, edge triggered */
 	outb(MASTER_8259_PORT, ICW1_INIT);
 	outb(SLAVE_8259_PORT, ICW1_INIT);
 
-	/* ICW2 - WHAT TO WRITE */
+	/* ICW2: map master IRQ0-7 to 0x20-0x27, slave IRQ0-7 to 0x28-0x2f for IRQs */
+	outb(MASTER_8259_PORT_DATA, 0x20);
+	outb(SLAVE_8259_PORT_DATA, 0x28);
 
-	/* ICW3: tell master that slave is IRQ2 */
-	outb(MASTER_8259_PORT_DATA, 4);
-	/* ICW3: tell slave its identity */
-	outb(SLAVE_8259_PORT_DATA, 2);
+	/* ICW3: tell master that slave is IRQ2, tell slave its identity */
+	outb(MASTER_8259_PORT_DATA, 0x04);
+	outb(SLAVE_8259_PORT_DATA, 0x02);
 
+	/* Restore masks */
+	outb(MASTER_8259_PORT_DATA, master_mask);
+	outb(SLAVE_8259_PORT_DATA, slave_mask);
 }
 
 /* Enable (unmask) the specified IRQ */
