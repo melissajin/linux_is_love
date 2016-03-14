@@ -84,10 +84,10 @@ extern void isr31();
 void isrs_install(){
 	set_trap_gate(0,  (unsigned long) isr0);
 	set_trap_gate(1,  (unsigned long) isr1);
-	set_trap_gate(2,  (unsigned long) isr2);
-	set_trap_gate(3,  (unsigned long) isr3);
-	set_trap_gate(4,  (unsigned long) isr4);
-	set_trap_gate(5,  (unsigned long) isr5);
+	set_int_gate(2,  (unsigned long) isr2);
+	set_sys_int_gate(3,  (unsigned long) isr3);
+	set_sys_gate(4,  (unsigned long) isr4);
+	set_sys_gate(5,  (unsigned long) isr5);
 	set_trap_gate(6,  (unsigned long) isr6);
 	set_trap_gate(7,  (unsigned long) isr7);
 	set_trap_gate(8,  (unsigned long) isr8);
@@ -96,7 +96,7 @@ void isrs_install(){
 	set_trap_gate(11,  (unsigned long) isr11);
 	set_trap_gate(12,  (unsigned long) isr12);
 	set_trap_gate(13,  (unsigned long) isr13);
-	set_trap_gate(14,  (unsigned long) isr14);
+	set_int_gate(14,  (unsigned long) isr14);
 	set_trap_gate(15,  (unsigned long) isr15);
 	set_trap_gate(16,  (unsigned long) isr16);
 	set_trap_gate(17,  (unsigned long) isr17);
@@ -117,12 +117,16 @@ void isrs_install(){
 }
 
 void fault_handler(struct regs * r){
-
+	clear();
 	if(r -> int_no < 32)
 	{
 		printf("Exception %d: ", r -> int_no);
 		printf(exception_messages[r -> int_no]);
 		printf("\n");
+	}
+	else
+	{
+		printf("Unknown exception %d\n", r -> int_no);
 	}
 
 	while(1);

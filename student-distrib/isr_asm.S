@@ -23,8 +23,7 @@ handle:
 	movl	%esp, %eax
 	pushl	%eax
 
-	movl	fault_handler, %eax
-	call	%eax
+	call	fault_handler
 
 	popl	%eax
 	pop		%gs
@@ -38,185 +37,185 @@ handle:
 
 isr0:
 	cli
-	pushb $0  /* error code */
-	pushb $0  /* isr number */
+	pushl $0  /* error code */
+	pushl $0  /* isr number */
 	jmp handle
 
 isr1:
 	cli
-	pushb $0
-	pushb $1
+	pushl $0
+	pushl $1
 	jmp handle
 
 isr2:
 	cli
-	pushb $0
-	pushb $2
+	pushl $0
+	pushl $2
 	jmp handle
 
 isr3:
 	cli
-	pushb $0
-	pushb $3
+	pushl $0
+	pushl $3
 	jmp handle
 
 isr4:
 	cli
-	pushb $0
-	pushb $4
+	pushl $0
+	pushl $4
 	jmp handle
 
 isr5:
 	cli
-	pushb $0
-	pushb $5
+	pushl $0
+	pushl $5
 	jmp handle
 
 isr6:
 	cli
-	pushb $0
-	pushb $6
+	pushl $0
+	pushl $6
 	jmp handle
 
 isr7:
 	cli
-	pushb $0
-	pushb $7
+	pushl $0
+	pushl $7
 	jmp handle
 
 isr8:
 	cli
-	pushb $8  /* no error code because processor pushes one */
+	pushl $8  /* no error code because processor pushes one */
 	jmp handle
 
 isr9:
 	cli
-	pushb $0
-	pushb $9
+	pushl $0
+	pushl $9
 	jmp handle
 
 isr10:
 	cli
-	pushb $10
+	pushl $10
 	jmp handle
 
 isr11:
 	cli
-	pushb $11
+	pushl $11
 	jmp handle
 
 isr12:
 	cli
-	pushb $12
+	pushl $12
 	jmp handle
 
 isr13:
 	cli
-	pushb $13
+	pushl $13
 	jmp handle
 
 isr14:
 	cli
-	pushb $14
+	pushl $14
 	jmp handle
 
 isr15:
 	cli
-	pushb $0
-	pushb $15
+	pushl $0
+	pushl $15
 	jmp handle
 
 isr16:
 	cli
-	pushb $0
-	pushb $16
+	pushl $0
+	pushl $16
 	jmp handle
 
 isr17:
 	cli
-	pushb $17
+	pushl $17
 	jmp handle
 
 isr18:
 	cli
-	pushb $0
-	pushb $18
+	pushl $0
+	pushl $18
 	jmp handle
 
 isr19:
 	cli
-	pushb $0
-	pushb $19
+	pushl $0
+	pushl $19
 	jmp handle
 
 isr20:
 	cli
-	pushb $0
-	pushb $20
+	pushl $0
+	pushl $20
 	jmp handle
 
 isr21:
 	cli
-	pushb $0
-	pushb $21
+	pushl $0
+	pushl $21
 	jmp handle
 
 isr22:
 	cli
-	pushb $0
-	pushb $22
+	pushl $0
+	pushl $22
 	jmp handle
 
 isr23:
 	cli
-	pushb $0
-	pushb $23
+	pushl $0
+	pushl $23
 	jmp handle
 
 isr24:
 	cli
-	pushb $0
-	pushb $24
+	pushl $0
+	pushl $24
 	jmp handle
 
 isr25:
 	cli
-	pushb $0
-	pushb $25
+	pushl $0
+	pushl $25
 	jmp handle
 
 isr26:
 	cli
-	pushb $0
-	pushb $26
+	pushl $0
+	pushl $26
 	jmp handle
 
 isr27:
 	cli
-	pushb $0
-	pushb $27
+	pushl $0
+	pushl $27
 	jmp handle
 
 isr28:
 	cli
-	pushb $0
-	pushb $28
+	pushl $0
+	pushl $28
 	jmp handle
 
 isr29:
 	cli
-	pushb $0
-	pushb $29
+	pushl $0
+	pushl $29
 	jmp handle
 
 isr30:
 	cli
-	pushb $0
-	pushb $30
+	pushl $0
+	pushl $30
 	jmp handle
 
 isr31:
 	cli
-	pushb $0
-	pushb $31
+	pushl $0
+	pushl $31
 	jmp handle
