@@ -8,24 +8,24 @@
 .extern fault_handler
 
 handle:
-	pusha
-	push	%ds
+	pusha			#pushing all the registers to save their values
+	push	%ds		#and the data segments to maintain state
 	push	%es
 	push	%fs
 	push	%gs
 
-	movw	$0x10, %ax
+	movw	$0x10, %ax 	#settting new data segments for the function call
 	movw	%ax, %ds
 	movw	%ax, %es
 	movw	%ax, %fs
 	movw	%ax, %gs
 
-	movl	%esp, %eax
-	pushl	%eax
+	movl	%esp, %eax	#pushing the argument in preperation to call fault_handler
+	pushl	%eax		#this will be the argument r
 
 	call	fault_handler
 
-	popl	%eax
+	popl	%eax		#restoring to old state
 	pop		%gs
 	pop		%fs
 	pop		%es
@@ -33,7 +33,7 @@ handle:
 	popa
 
 	add		$8, %esp
-	iret
+	iret			#return
 
 isr0:
 	cli
