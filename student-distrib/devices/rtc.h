@@ -11,9 +11,9 @@
                               // and to disable NMI
 #define RW_CMOS_PORT     0x71 // Port used to read/write from from CMOS
 #define RTC_IRQ_NUM  0x08
-
+//initializes rtc
 void rtc_init();
-
+//rtc interrupt
 void rtc_handler_main();
 
 #endif

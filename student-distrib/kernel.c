@@ -156,7 +156,7 @@ entry (unsigned long magic, unsigned long addr)
 	virtualmem_init();
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
-	// kybd_init();
+	kybd_init();
 
 	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
 	rtc_init();
@@ -172,7 +172,10 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
+	//asm volatile("int $0x80");
+
 	/* Execute the first program (`shell') ... */
+
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");
 }

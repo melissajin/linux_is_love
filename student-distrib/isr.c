@@ -47,27 +47,26 @@ static char * exception_messages[] =
 	"Reserved",
 };
 
-// all of these are declared in isr_asm
-extern void isr0();
-extern void isr1();
-extern void isr2();
-extern void isr3();
-extern void isr4();
-extern void isr5();
-extern void isr6();
-extern void isr7();
-extern void isr8();
-extern void isr9();
-extern void isr10();
-extern void isr11();
-extern void isr12();
-extern void isr13();
-extern void isr14();
-extern void isr15();
-extern void isr16();
-extern void isr17();
-extern void isr18();
-extern void isr19();
+extern void isr0(); //Division by zero
+extern void isr1(); //Debugger
+extern void isr2(); //Non Maskable Interrupt(NMI)
+extern void isr3(); //Breakpoint
+extern void isr4(); //Overflow
+extern void isr5(); //Bounds
+extern void isr6(); //Invalid Opcode
+extern void isr7(); //Coprocessor not available
+extern void isr8(); //Double fault
+extern void isr9(); //Coprocessor segment Overrun
+extern void isr10(); //invalid TSS
+extern void isr11(); //segment not present
+extern void isr12(); //stack fault
+extern void isr13(); //general protection fault
+extern void isr14(); //page fault
+extern void isr15(); //unknown interrupt
+extern void isr16(); //math fault
+extern void isr17(); //Alignment check
+extern void isr18(); //Machine check
+extern void isr19(); //REST ARE RESERVED
 extern void isr20();
 extern void isr21();
 extern void isr22();
@@ -80,8 +79,15 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void sys_call();
 
-/* Set first 32 entries in IDT to Intel's defined exceptions */
+/* isrs_install
+ * DESC: C-function that initializes the first 32 gates int the IDT for the exceptions
+ * INPUT: none
+ * OUTPUT: none
+ * RETURN: none
+ * SIDE EFFECTS: Sets the first 32 spots on the idt table
+ */
 void isrs_install(){
 	set_trap_gate(0,  (unsigned long) isr0);
 	set_trap_gate(1,  (unsigned long) isr1);
@@ -115,13 +121,21 @@ void isrs_install(){
 	set_trap_gate(29,  (unsigned long) isr29);
 	set_trap_gate(30,  (unsigned long) isr30);
 	set_trap_gate(31,  (unsigned long) isr31);
+	set_sys_gate(0x80, (unsigned long) sys_call);
 }
-
+/*fault_handler
+ *DESC: C-function that handles any exceptions, called by an assembly linkage
+ *INPUT: a register structure that has the state of the machine and which error included
+ *OUTPUT: prints "Exception <exception#>: <exception message> " on a known exception(one of the first 32)
+ *	  prints "Unknown exception <exception#>" on an unknown exception
+ *RETURN: none
+ *SIDE EFFECT: Spins indefinately at aka and blue screens
+ */
 void fault_handler(struct regs * r){
 	clear();
 	if(r -> int_no < 32)
 	{
-		printf("Exception %d: ", r -> int_no); //error message with error number
+		printf("Exception %d: ", r -> int_no);
 		printf(exception_messages[r -> int_no]);
 		printf("\n");
 	}
@@ -130,5 +144,17 @@ void fault_handler(struct regs * r){
 		printf("Unknown exception %d\n", r -> int_no);
 	}
 
-	while(1); //blue screen
+	while(1);
+}
+
+/*sys_call_handler
+ *DESC: C-function that handles any sys_call, called by an assembly linkage
+ *INPUT: int syscall- which syscall number it is
+ *OUTPUT: prints "SYSTEM CALL <syscall#> "
+ *RETURN: none
+ *SIDE EFFECT: Spins indefinately at end aka blue screens
+ */
+void sys_call_handler(int syscall){
+	printf("SYSTEM CALL %d\n", syscall);
+	while(1);
 }

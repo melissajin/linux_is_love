@@ -1,44 +1,62 @@
 .text
 
-.global isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7
+.global isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7 //provides all the assembly linkages to be called by c functions
 .global isr8, isr9, isr10, isr11, isr12, isr13, isr14, isr15
 .global isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
+.global sys_call
+.global kybd_isr, rtc_isr
 
-.extern fault_handler
+.extern fault_handler		#assembly linkage for all our exceptions
+.extern sys_call_handler	#assembly linkage for sys calls
+.extern keyboard_handler_main	#assembly linkage for keyboard
+.extern rtc_handler_main	#assembly linkage for rtc
 
 handle:
-	pusha			#pushing all the registers to save their values
-	push	%ds		#and the data segments to maintain state
+	pusha
+	push	%ds		#here we store the data segment registers
 	push	%es
 	push	%fs
 	push	%gs
 
-	movw	$0x10, %ax 	#settting new data segments for the function call
-	movw	%ax, %ds
+	movw	$0x10, %ax	#0x10 points to the new data selector
+	movw	%ax, %ds	#we fill all the segment registers with the new data selector
 	movw	%ax, %es
 	movw	%ax, %fs
 	movw	%ax, %gs
 
-	movl	%esp, %eax	#pushing the argument in preperation to call fault_handler
-	pushl	%eax		#this will be the argument r
+	movl	%esp, %eax
+	pushl	%eax		#pushing the isr number for the fault handler
 
 	call	fault_handler
 
-	popl	%eax		#restoring to old state
-	pop		%gs
-	pop		%fs
-	pop		%es
-	pop		%ds
+	popl	%eax		#restoring all our registers
+	pop	%gs
+	pop	%fs
+	pop	%es
+	pop	%ds
+	popa
+
+	add		$8, %esp #clearing stack
+	iret
+
+handle_syscall:		#similar functionality as above except for system calls
+	pusha
+	movl	%esp, %eax
+	pushl	%eax
+
+	call	fault_handler
+
+	popl	%eax
 	popa
 
 	add		$8, %esp
-	iret			#return
+	iret
 
 isr0:
 	cli
-	pushl $0  /* error code */
-	pushl $0  /* isr number */
+	pushl $0  /* error code repeats for all isr*/
+	pushl $0  /* isr number repeats for all isr*/
 	jmp handle
 
 isr1:
@@ -219,3 +237,22 @@ isr31:
 	pushl $0
 	pushl $31
 	jmp handle
+
+kybd_isr:		#A handler/assembly linkage for the keyboard just saves state of machine
+	cli
+	pusha		
+	call keyboard_handler_main
+	popa
+	iret
+
+rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
+	cli
+	pusha
+	call rtc_handler_main
+	popa
+	iret
+
+sys_call:		#preparing argument for handle_syscall
+	cli
+	pushl %eax
+	jmp handle_syscall

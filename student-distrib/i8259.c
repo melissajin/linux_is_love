@@ -48,17 +48,23 @@ enable_irq(uint32_t irq_num)
 	uint16_t port;
 	uint8_t value;
 
-	if(irq_num < 8){
+	if(irq_num < 8){ 		//if interrupt occurs on master pic
 		port = MASTER_8259_PORT_DATA;
+		value = inb(port) & ~(1 << irq_num);
+		outb(value, port);
 	}
-	else{
+	else{				//if interrupt occurs on slave pic
 		port = SLAVE_8259_PORT_DATA;
 		irq_num -= 8;
+		value = inb(port) & ~(1 << irq_num); 
+		outb(value, port); 	
+		port = MASTER_8259_PORT_DATA;	//mask slave pic on master pic
+		value = inb(port) & ~(1 << 2);
+		outb(value, port);
 	}
-
-	value = inb(port) & ~(1 << irq_num);
-	outb(value, port);
+	
 }
+	
 
 /* Disable (mask) the specified IRQ */
 /* Source: wiki.osdev.org/8259_PIC#Initialisation */
@@ -70,14 +76,18 @@ disable_irq(uint32_t irq_num)
 
 	if(irq_num < 8){
 		port = MASTER_8259_PORT_DATA;
+		value = inb(port) | (1 << irq_num); //mask the master pic
+		outb(value, port);
 	}
 	else{
-		port = SLAVE_8259_PORT_DATA;
+		port = SLAVE_8259_PORT_DATA; //mask the slave pic
 		irq_num -= 8;
+		value = inb(port) | (1 << irq_num);
+		outb(value, port);
+		port = MASTER_8259_PORT_DATA; //mask the master pic
+		value = inb(port) | (1 << 2);
+		outb(value, port);
 	}
-
-	value = inb(port) | (1 << irq_num);
-	outb(value, port);
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
@@ -85,9 +95,14 @@ disable_irq(uint32_t irq_num)
 void
 send_eoi(uint32_t irq_num)
 {
-	if(irq_num >= 8){
-		outb(EOI, SLAVE_8259_PORT); /* Send EOI to slave pic */
+	if(irq_num < 8){
+		outb((EOI | irq_num), MASTER_8259_PORT); /* Send EOI to master pic */
 	}
-	outb(EOI, MASTER_8259_PORT); /* Send EOI to master pic */
+	else{
+		irq_num -= 8;
+		outb((EOI | irq_num), SLAVE_8259_PORT); /* Send EOI to slave pic */
+		outb((EOI | 2), MASTER_8259_PORT); /* Send EOI to master pic */
+	}
+	
 }
 
