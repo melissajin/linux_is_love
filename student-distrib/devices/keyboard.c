@@ -4,6 +4,9 @@
 
 #include "keyboard.h"
 #include "i8259.h"
+#include "idt_set.h"
+
+extern void keyboard_handler(void);
 
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
@@ -98,6 +101,16 @@ void kybd_init(uint32_t irq_num){
   // initialize by sending IRQ number (33?) to keybrd interrupt handler
   // I'm going to need the vector table of the idt
   //setvector(irq_num, kybrd_intr);
+
+	unsigned long keyboard_address;
+	unsigned long idt_address;
+
+	/* Populate IDT entry for keyboard */
+	keyboard_address = (unsigned long) keyboard_handler
+	set_int_gate(0x21, keyboard_address);
+
+	/* Unmask keybord interrupt on PIC */
+	write_port(MASTER_8259_PORT_DATA , 0xFD);
 }
 
 void kybd_enable(){
@@ -106,4 +119,26 @@ void kybd_enable(){
 
 void kybd_disable(){
   outb(KEYBOARD_DISABLE, KEYBOARD_PORT);
+}
+
+void keyboard_handler_main(){
+
+	disable_irq(KEYBOARD_IRQ_NUM);
+	send_eoi(KEYBOARD_IRQ_NUM);
+
+	unsigned char scancode;
+	unsigned char status;
+
+	status = inb(KEYBOARD_PORT);
+	if(status & 1){
+		/* Read from keyboard's data buffer */
+		scancode = inb(KEYBOARD_PORT_DATA);
+
+		/* If key not released, print to screen */
+		if(!(scancode & 0x80)){
+			putc(kybd_keys[scancode]);
+		}
+	}
+	enable_irq(KEYBOARD_IRQ_NUM);
+	
 }

@@ -8,9 +8,10 @@
 #include "../types.h"
 
 #define KEYBOARD_PORT     0x64
+#define KEYBOARD_PORT_DATA 0x60
 #define KEYBOARD_ENABLE   0xAE
 #define KEYBOARD_DISABLE  0xAD
-
+#define KEYBOARD_IRQ_NUM  0x01
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
 #define KEY_SPACE         ' '
@@ -171,4 +172,6 @@ void kybd_enable();
 // Disable the keyboard to send interrupts
 void kybd_disable();
 
+// Handles interrupts from the keyboard
+void keyboard_handler_main();
 #endif

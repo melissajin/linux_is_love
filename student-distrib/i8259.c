@@ -88,6 +88,6 @@ send_eoi(uint32_t irq_num)
 	if(irq_num >= 8){
 		outb(EOI, SLAVE_8259_PORT); /* Send EOI to slave pic */
 	}
-	outb(EOI, MASTER_8259_PORT) /* Send EOI to master pic */
+	outb(EOI, MASTER_8259_PORT); /* Send EOI to master pic */
 }
 
