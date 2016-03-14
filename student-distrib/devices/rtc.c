@@ -10,7 +10,7 @@
 void rtc_init(){
 
   /* Populate IDT entry for rtc */
-  set_int_gate(0x28, rtc_handler_main);
+  set_int_gate(0x28, (unsigned long) rtc_handler_main);
 
   /* Turn on RTC interrupts */
 	cli();
