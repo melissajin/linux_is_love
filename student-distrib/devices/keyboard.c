@@ -104,7 +104,7 @@ void kybd_init(){
   //setvector(irq_num, kybrd_intr);
 
 	/* Populate IDT entry for keyboard */
-	set_int_gate(0x21, (unsigned long) kybd_isr);
+	set_int_gate(0x21, (unsigned long) kybd_isr); //0x21 is the interrupt number in the IDT
 
 	/* Unmask keybord interrupt on PIC */
 	enable_irq(KEYBOARD_IRQ_NUM);
@@ -121,7 +121,7 @@ void keyboard_handler_main(){
 		scancode = inb(KEYBOARD_PORT_DATA);
 
 		/* If key not released, print to screen */
-		if(!(scancode & 0x80)){
+		if(!(scancode & 0x80)){ //0x80 is a flag for key release check
 			putc(kybd_keys[scancode]);
 		}
 	}
