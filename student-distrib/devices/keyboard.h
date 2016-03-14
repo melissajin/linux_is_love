@@ -164,7 +164,7 @@
 #define KEY_NUMKEYCODES       0x0000
 
 // Initialize the keyboard device
-void kybd_init(uint32_t irq_num);
+void kybd_init();
 
 // Enable the keyboard to send interrupts
 void kybd_enable();

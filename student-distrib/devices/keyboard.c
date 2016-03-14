@@ -97,7 +97,7 @@ static uint16_t kybd_keys [] = {
 	KEY_F12			//0x58
 };
 
-void kybd_init(uint32_t irq_num){
+void kybd_init(){
   // initialize by sending IRQ number (33?) to keybrd interrupt handler
   // I'm going to need the vector table of the idt
   //setvector(irq_num, kybrd_intr);
