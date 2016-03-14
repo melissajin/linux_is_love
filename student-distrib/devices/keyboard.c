@@ -3,8 +3,9 @@
  */
 
 #include "keyboard.h"
-#include "i8259.h"
-#include "idt_set.h"
+#include "../i8259.h"
+#include "../idt_set.h"
+#include "../lib.h"
 
 extern void keyboard_handler(void);
 
@@ -97,20 +98,18 @@ static uint16_t kybd_keys [] = {
 	KEY_F12			//0x58
 };
 
-void kybd_init(uint32_t irq_num){
+void kybd_init(){
   // initialize by sending IRQ number (33?) to keybrd interrupt handler
   // I'm going to need the vector table of the idt
   //setvector(irq_num, kybrd_intr);
 
 	unsigned long keyboard_address;
-	unsigned long idt_address;
 
 	/* Populate IDT entry for keyboard */
-	keyboard_address = (unsigned long) keyboard_handler
-	set_int_gate(0x21, keyboard_address);
+	set_int_gate(0x21, keyboard_handler_main);
 
 	/* Unmask keybord interrupt on PIC */
-	write_port(MASTER_8259_PORT_DATA , 0xFD);
+	outb(MASTER_8259_PORT_DATA , 0xFD);
 }
 
 void kybd_enable(){

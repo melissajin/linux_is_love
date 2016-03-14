@@ -153,6 +153,14 @@ entry (unsigned long magic, unsigned long addr)
 	 * PIC, any other initialization stuff... */
 	virtualmem_init();
 
+	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
+	kybd_init();
+
+	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
+
+	/* load IDT */
+	lidt(idt_desc_ptr);
+
 	/* Enable interrupts */
 	/* Do not enable the following until after you have set up your
 	 * IDT correctly otherwise QEMU will triple fault and simple close

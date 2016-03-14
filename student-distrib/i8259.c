@@ -16,8 +16,8 @@ i8259_init(void)
 {
 
 	/* Save masks */
-	master_mask = inb(MASTER_8259_PORT_DATA); 
-	slave_mask = inb(SLAVE_8259_PORT_DATA);
+	master_mask = 0xff; 
+	slave_mask = 0xff;
 
 	/* ICW1: Start PIC initization sequence, no ICW4, 2 PICs, edge triggered */
 	outb(ICW1, MASTER_8259_PORT);
@@ -35,7 +35,7 @@ i8259_init(void)
 	outb(ICW4, MASTER_8259_PORT_DATA);
 	outb(ICW4, SLAVE_8259_PORT_DATA);
 
-	/* Restore masks */
+	/* Mask all interrupts */
 	outb(master_mask, MASTER_8259_PORT_DATA);
 	outb(slave_mask, SLAVE_8259_PORT_DATA);
 }
