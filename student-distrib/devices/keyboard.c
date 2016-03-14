@@ -99,31 +99,17 @@ static uint16_t kybd_keys [] = {
 };
 
 void kybd_init(){
-  // initialize by sending IRQ number (33?) to keybrd interrupt handler
-  // I'm going to need the vector table of the idt
-  //setvector(irq_num, kybrd_intr);
-
-	unsigned long keyboard_address;
 
 	/* Populate IDT entry for keyboard */
 	set_int_gate(0x21, keyboard_handler_main);
 
 	/* Unmask keybord interrupt on PIC */
-	outb(MASTER_8259_PORT_DATA , 0xFD);
-}
-
-void kybd_enable(){
-  outb(KEYBOARD_ENABLE, KEYBOARD_PORT);
-}
-
-void kybd_disable(){
-  outb(KEYBOARD_DISABLE, KEYBOARD_PORT);
+	enable_irq(KEYBOARD_IRQ_NUM);
 }
 
 void keyboard_handler_main(){
 
 	disable_irq(KEYBOARD_IRQ_NUM);
-	send_eoi(KEYBOARD_IRQ_NUM);
 
 	unsigned char scancode;
 	unsigned char status;
@@ -138,6 +124,7 @@ void keyboard_handler_main(){
 			putc(kybd_keys[scancode]);
 		}
 	}
+	send_eoi(KEYBOARD_IRQ_NUM);
 	enable_irq(KEYBOARD_IRQ_NUM);
-	
+
 }
