@@ -22,6 +22,12 @@ ldt_size:
 	.long ldt_bottom - ldt - 1
 
 	.word 0 # Padding
+
+gdt_desc:
+	.word 0 # Padding to make struct 64 bits
+	.word 0x3F # Size is 64 - 1 because eight 8-byte segments
+	.long gdt
+
 ldt_desc:
 	.word KERNEL_LDT
 	.long ldt
