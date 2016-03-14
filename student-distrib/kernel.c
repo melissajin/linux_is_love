@@ -7,6 +7,7 @@
 #include "lib.h"
 #include "i8259.h"
 #include "devices/keyboard.h"
+#include "devices/rtc.h"
 #include "debug.h"
 #include "virtualmem.h"
 #include "isr.h"
@@ -155,9 +156,10 @@ entry (unsigned long magic, unsigned long addr)
 	virtualmem_init();
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
-	kybd_init();
+	// kybd_init();
 
 	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
+	rtc_init();
 
 	/* load IDT */
 	isrs_install();
