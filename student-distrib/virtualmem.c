@@ -1,5 +1,6 @@
 #include "virtualmem.h"
 #include "types.h"
+#include "lib.h"
 
 #define TABLE_SIZE 1024
 #define PAGE_SIZE  4096  /* kilobytes */
@@ -27,7 +28,6 @@
 
 /* memory locations */
 #define KERNEL_LOC 0x400000
-#define VIDEO 0xB8000
 
 static uint32_t pd[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 static uint32_t pt_first[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
@@ -39,7 +39,7 @@ void virtualmem_init()
 	/* initialize page directory */
 	for(i = 0; i < TABLE_SIZE; i++)
 	{
-		pd[i] = PDE_INIT_VAL;
+		pd[i] = PDE_INIT_FLAGS;
 	}
 
 	/* initialize video memory pages */
