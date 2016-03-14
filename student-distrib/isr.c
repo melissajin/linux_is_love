@@ -1,76 +1,8 @@
-#include "isr_init.S"
+#include "isr.h"
 
-extern void isr0();
-extern void isr1();
-extern void isr2();
-extern void isr3();
-extern void isr4();
-extern void isr5();
-extern void isr6();
-extern void isr7();
-extern void isr8();
-extern void isr9();
-extern void isr10();
-extern void isr11();
-extern void isr12();
-extern void isr13();
-extern void isr14();
-extern void isr15();
-extern void isr16();
-extern void isr17();
-extern void isr18();
-extern void isr19();
-extern void isr20();
-extern void isr31();
-extern void isr22();
-extern void isr23();
-extern void isr24();
-extern void isr25();
-extern void isr26();
-extern void isr27();
-extern void isr28();
-extern void isr29();
-extern void isr30();
-extern void isr31();
-
-/* Set first 32 entries in IDT to Intel's defined exceptions */
-void isrs_install(){
-	set_trap_gate(0, (unsigned) isr0);
-	set_trap_gate(1, (unsigned) isr1);
-	set_trap_gate(2, (unsigned) isr2);
-	set_trap_gate(3, (unsigned) isr3);
-	set_trap_gate(4, (unsigned) isr4);
-	set_trap_gate(5, (unsigned) isr5);
-	set_trap_gate(6, (unsigned) isr6);
-	set_trap_gate(7, (unsigned) isr7);
-	set_trap_gate(8, (unsigned) isr8);
-	set_trap_gate(9, (unsigned) isr9);
-	set_trap_gate(10, (unsigned) isr10);
-	set_trap_gate(11, (unsigned) isr11);
-	set_trap_gate(12, (unsigned) isr12);
-	set_trap_gate(13, (unsigned) isr13);
-	set_trap_gate(14, (unsigned) isr14);
-	set_trap_gate(15, (unsigned) isr15);
-	set_trap_gate(16, (unsigned) isr16);
-	set_trap_gate(17, (unsigned) isr17);
-	set_trap_gate(18, (unsigned) isr18);
-	set_trap_gate(19, (unsigned) isr19);
-	set_trap_gate(20, (unsigned) isr20);
-	set_trap_gate(21, (unsigned) isr21);
-	set_trap_gate(22, (unsigned) isr22);
-	set_trap_gate(23, (unsigned) isr23);
-	set_trap_gate(24, (unsigned) isr24);
-	set_trap_gate(25, (unsigned) isr25);
-	set_trap_gate(26, (unsigned) isr26);
-	set_trap_gate(27, (unsigned) isr27);
-	set_trap_gate(28, (unsigned) isr28);
-	set_trap_gate(29, (unsigned) isr29);
-	set_trap_gate(30, (unsigned) isr30);
-	set_trap_gate(31, (unsigned) isr31);
-}
 
 /* Sets error message to print out when exception is recieved */
-unsigned char * excetion_messages[] = 
+unsigned char * exception_messages[] = 
 {
 	"Division by zero",
 	"Debugger",
@@ -104,17 +36,215 @@ unsigned char * excetion_messages[] =
 	"Reserved",
 	"Reserved",
 	"Reserved",
+};
+
+void isr0()
+{
+
+	printf("%s",exception_messages[0]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr1()
+{
+
+	printf("%s",exception_messages[1]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr2()
+{
+
+	printf("%s",exception_messages[2]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr3()
+{
+
+	printf("%s",exception_messages[3]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr4()
+{
+
+	printf("%s",exception_messages[4]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr5()
+{
+
+	printf("%s",exception_messages[5]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr6()
+{
+
+	printf("%s",exception_messages[6]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr7()
+{
+
+	printf("%s",exception_messages[7]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr8()
+{
+
+	printf("%s",exception_messages[8]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr9()
+{
+
+	printf("%s",exception_messages[9]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr10()
+{
+
+	printf("%s",exception_messages[10]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr11()
+{
+
+	printf("%s",exception_messages[11]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr12()
+{
+
+	printf("%s",exception_messages[12]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr13()
+{
+
+	printf("%s",exception_messages[13]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr14()
+{
+
+	printf("%s",exception_messages[14]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr15()
+{
+
+	printf("%s",exception_messages[15]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr16()
+{
+
+	printf("%s",exception_messages[16]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr17()
+{
+
+	printf("%s",exception_messages[17]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
+}
+void isr18()
+{
+
+	printf("%s",exception_messages[18]);
+
+	while(1){
+	//spinning to produce blue screen kinda deal
+	}
 }
 
-void fault_handler(){
+/* Set first 32 entries in IDT to Intel's defined exceptions */
+void isrs_install(){
+	set_trap_gate(0,  isr0);
+	set_trap_gate(1,  isr1);
+	set_trap_gate(2,  isr2);
+	set_trap_gate(3,  isr3);
+	set_trap_gate(4,  isr4);
+	set_trap_gate(5,  isr5);
+	set_trap_gate(6,  isr6);
+	set_trap_gate(7,  isr7);
+	set_trap_gate(8,  isr8);
+	set_trap_gate(9,  isr9);
+	set_trap_gate(10,  isr10);
+	set_trap_gate(11,  isr11);
+	set_trap_gate(12,  isr12);
+	set_trap_gate(13,  isr13);
+	set_trap_gate(14,  isr14);
+	set_trap_gate(15,  isr15);
+	set_trap_gate(16,  isr16);
+	set_trap_gate(17,  isr17);
+	set_trap_gate(18,  isr18);
+}
+
+
+
+
+
+
+/*void fault_handler(){
 	
-	/* prints excetion message */
 	puts(excetion_messages[]);
 	
-	/* infinite loop */
 	for(;;); 	
 }
-
+*/
 
 
 
