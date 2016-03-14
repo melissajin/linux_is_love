@@ -9,6 +9,7 @@
 #include "devices/keyboard.h"
 #include "debug.h"
 #include "virtualmem.h"
+#include "isr.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -159,14 +160,15 @@ entry (unsigned long magic, unsigned long addr)
 	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
 
 	/* load IDT */
+	isrs_install();
 	lidt(idt_desc_ptr);
 
 	/* Enable interrupts */
 	/* Do not enable the following until after you have set up your
 	 * IDT correctly otherwise QEMU will triple fault and simple close
 	 * without showing you any output */
-	/*printf("Enabling Interrupts\n");
-	sti();*/
+	printf("Enabling Interrupts\n");
+	sti();
 
 	/* Execute the first program (`shell') ... */
 
