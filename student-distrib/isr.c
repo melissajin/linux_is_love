@@ -47,6 +47,7 @@ static char * exception_messages[] =
 	"Reserved",
 };
 
+// all of these are declared in isr_asm
 extern void isr0();
 extern void isr1();
 extern void isr2();
@@ -120,7 +121,7 @@ void fault_handler(struct regs * r){
 	clear();
 	if(r -> int_no < 32)
 	{
-		printf("Exception %d: ", r -> int_no);
+		printf("Exception %d: ", r -> int_no); //error message with error number
 		printf(exception_messages[r -> int_no]);
 		printf("\n");
 	}
@@ -129,5 +130,5 @@ void fault_handler(struct regs * r){
 		printf("Unknown exception %d\n", r -> int_no);
 	}
 
-	while(1);
+	while(1); //blue screen
 }
