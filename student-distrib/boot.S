@@ -25,7 +25,8 @@ _start:
 
 continue:
 	# Load the GDT
-
+	# Add 2 to skip the padding field in the gdt_desc struct
+	lgdt    gdt_desc + 2
 	# Load CS with the new descriptor value
 	ljmp    $KERNEL_CS, $keep_going
 
@@ -54,4 +55,3 @@ keep_going:
 halt:
 	hlt
 	jmp     halt
-

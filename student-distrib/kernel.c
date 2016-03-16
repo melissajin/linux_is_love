@@ -6,7 +6,11 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "devices/keyboard.h"
+#include "devices/rtc.h"
 #include "debug.h"
+#include "virtualmem.h"
+#include "isr.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -149,17 +153,29 @@ entry (unsigned long magic, unsigned long addr)
 
 	/* Initialize devices, memory, filesystem, enable device interrupts on the
 	 * PIC, any other initialization stuff... */
+	virtualmem_init();
+
+	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
+	kybd_init();
+
+	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
+	rtc_init();
+
+	/* load IDT */
+	isrs_install();
+	lidt(idt_desc_ptr);
 
 	/* Enable interrupts */
 	/* Do not enable the following until after you have set up your
 	 * IDT correctly otherwise QEMU will triple fault and simple close
 	 * without showing you any output */
-	/*printf("Enabling Interrupts\n");
-	sti();*/
+	printf("Enabling Interrupts\n");
+	sti();
+
+	//asm volatile("int $0x80");
 
 	/* Execute the first program (`shell') ... */
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");
 }
-
