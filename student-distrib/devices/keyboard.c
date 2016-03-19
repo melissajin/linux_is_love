@@ -98,6 +98,12 @@ static uint16_t kybd_keys [] = {
 	KEY_F12			//0x58
 };
 
+/* determine if the key is pressed */
+int shift_key = 0;
+int ctrl_key = 0;
+/* determine if the key is on */
+int caps_lock = 0;
+
 void kybd_init(){
   // initialize by sending IRQ number (33?) to keybrd interrupt handler
   // I'm going to need the vector table of the idt
@@ -122,7 +128,14 @@ void keyboard_handler_main(){
 
 		/* If key not released, print to screen */
 		if(!(scancode & 0x80)){ //0x80 is a flag for key release check
-			putc(kybd_keys[scancode]);
+			if(kybd_keys[scancode] == KEY_CAPSLOCK){
+				caps_lock = !caps_lock;
+				//break;
+			}
+			else{
+				if(caps_lock == 1 || shift_key == 1) putc(kybd_keys[scancode] - 32);
+				else putc(kybd_keys[scancode]);
+			}
 		}
 	}
 	send_eoi(KEYBOARD_IRQ_NUM);
