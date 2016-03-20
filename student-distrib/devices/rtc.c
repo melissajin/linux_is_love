@@ -34,14 +34,14 @@ void rtc_init(){
   outb(NMI_DISABLE | REG_A, RTC_REG_PORT);
   curr = inb(RW_CMOS_PORT);
   outb(NMI_DISABLE | REG_A, RTC_REG_PORT);
-  outb(RW_CMOS_PORT, (curr & 0xF0) | rate); 		//0xF0 a mask to take top 4 bits 
+  outb(RW_CMOS_PORT, (curr & 0xF0) | rate); 		//0xF0 a mask to take top 4 bits
 
   enable_irq(RTC_IRQ_NUM);
 }
 
 void rtc_handler_main(){
- 
-  test_interrupts();
+
+  //test_interrupts();
   // Reset the C register to get the next interrupt
   outb(REG_C, RTC_REG_PORT);
   inb(RW_CMOS_PORT);

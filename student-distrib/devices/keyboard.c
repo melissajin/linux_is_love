@@ -133,7 +133,9 @@ void keyboard_handler_main(){
 				//break;
 			}
 			else{
-				if(caps_lock == 1 || shift_key == 1) putc(kybd_keys[scancode] - 32);
+				if((caps_lock == 1 || shift_key == 1) &&
+				   (kybd_keys[scancode] >= 'a' && kybd_keys[scancode] <= 'z'))
+					putc(kybd_keys[scancode] - 32);
 				else putc(kybd_keys[scancode]);
 			}
 		}
