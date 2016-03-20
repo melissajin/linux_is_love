@@ -128,6 +128,12 @@ void keyboard_handler_main(){
 		/* Read from keyboard's data buffer */
 		scancode = inb(KEYBOARD_PORT_DATA);
 
+		if((scancode & 0x80)){ //0x80 is a flag for key release check
+			if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 0;
+			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 0;
+			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 0;
+			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 0;
+		}
 		/* If key not released, print to screen */
 		if(!(scancode & 0x80)){ //0x80 is a flag for key release check
 			if(kybd_keys[scancode] == KEY_CAPSLOCK) caps_lock = !caps_lock;
@@ -136,18 +142,12 @@ void keyboard_handler_main(){
 			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 1;
 			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 1;
 			else{
-				if((caps_lock == 1 || r_shift_key == 1 || l_shift_key == 1) && 
+				if((caps_lock == 1 || r_shift_key == 1 || l_shift_key == 1) &&
 				     (r_ctrl_key == 0 && l_ctrl_key == 0) &&
 				   (kybd_keys[scancode] >= 'a' && kybd_keys[scancode] <= 'z'))
 					putc(kybd_keys[scancode] - 32);
-				else putc(kybd_keys[scancode]);
+				else if(r_ctrl_key == 0 && l_ctrl_key == 0) putc(kybd_keys[scancode]);
 			}
-		}
-		if((scancode & 0x80)){ //0x80 is a flag for key release check
-			if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 0;
-			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 0;
-			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 0;
-			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 0;
 		}
 	}
 	send_eoi(KEYBOARD_IRQ_NUM);
