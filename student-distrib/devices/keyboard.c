@@ -129,13 +129,14 @@ void keyboard_handler_main(){
 		scancode = inb(KEYBOARD_PORT_DATA);
 
 		if((scancode & 0x80)){ //0x80 is a flag for key release check
+			scancode -= 0x80; // Get the actual scancode value
 			if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 0;
 			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 0;
 			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 0;
 			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 0;
 		}
 		/* If key not released, print to screen */
-		if(!(scancode & 0x80)){ //0x80 is a flag for key release check
+		else if(!(scancode & 0x80)){ //0x80 is a flag for key release check
 			if(kybd_keys[scancode] == KEY_CAPSLOCK) caps_lock = !caps_lock;
 			else if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 1;
 			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 1;
