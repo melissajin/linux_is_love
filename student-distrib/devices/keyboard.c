@@ -127,27 +127,72 @@ void keyboard_handler_main(){
 	if(status & 1){
 		/* Read from keyboard's data buffer */
 		scancode = inb(KEYBOARD_PORT_DATA);
+		uint16_t key_out;
 
 		if((scancode & 0x80)){ //0x80 is a flag for key release check
 			scancode -= 0x80; // Get the actual scancode value
-			if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 0;
-			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 0;
-			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 0;
-			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 0;
+			key_out = kybd_keys[scancode];
+			if(key_out == KEY_RSHIFT) r_shift_key = 0;
+			else if(key_out == KEY_LSHIFT) l_shift_key = 0;
+			else if(key_out == KEY_LCTRL) r_ctrl_key = 0;
+			else if(key_out == KEY_RCTRL) l_ctrl_key = 0;
 		}
 		/* If key not released, print to screen */
 		else if(!(scancode & 0x80)){ //0x80 is a flag for key release check
-			if(kybd_keys[scancode] == KEY_CAPSLOCK) caps_lock = !caps_lock;
-			else if(kybd_keys[scancode] == KEY_RSHIFT) r_shift_key = 1;
-			else if(kybd_keys[scancode] == KEY_LSHIFT) l_shift_key = 1;
-			else if(kybd_keys[scancode] == KEY_LCTRL) r_ctrl_key = 1;
-			else if(kybd_keys[scancode] == KEY_RCTRL) l_ctrl_key = 1;
+			key_out = kybd_keys[scancode];
+			if(key_out == KEY_CAPSLOCK) caps_lock = !caps_lock;
+			else if(key_out == KEY_RSHIFT) r_shift_key = 1;
+			else if(key_out == KEY_LSHIFT) l_shift_key = 1;
+			else if(key_out == KEY_LCTRL) r_ctrl_key = 1;
+			else if(key_out == KEY_RCTRL) l_ctrl_key = 1;
 			else{
 				if((caps_lock == 1 || r_shift_key == 1 || l_shift_key == 1) &&
 				     (r_ctrl_key == 0 && l_ctrl_key == 0) &&
-				   (kybd_keys[scancode] >= 'a' && kybd_keys[scancode] <= 'z'))
-					putc(kybd_keys[scancode] - 32);
-				else if(r_ctrl_key == 0 && l_ctrl_key == 0) putc(kybd_keys[scancode]);
+				   (key_out >= 'a' && key_out <= 'z'))
+					putc(key_out - 32);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '0')
+				putc(KEY_RIGHTPARENTHESIS);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '1')
+				putc(KEY_EXCLAMATION);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '2')
+				putc(KEY_AT);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '3')
+				putc(KEY_HASH);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '4')
+				putc(KEY_DOLLAR);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '5')
+				putc(KEY_PERCENT);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '6')
+				putc(KEY_CARRET);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '7')
+				putc(KEY_AMPERSAND);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '8')
+				putc(KEY_ASTERISK);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '9')
+				putc(KEY_LEFTPARENTHESIS);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_COMMA)
+				putc(KEY_LESS);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_DOT)
+				putc(KEY_GREATER);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_SLASH)
+				putc(KEY_QUESTION);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_SEMICOLON)
+				putc(KEY_COLON);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_QUOTE)
+				putc(KEY_QUOTEDOUBLE);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_LEFTBRACKET)
+				putc(KEY_LEFTCURL);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_RIGHTBRACKET)
+				putc(KEY_RIGHTCURL);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_GRAVE)
+				putc(KEY_TILDE);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_MINUS)
+				putc(KEY_UNDERSCORE);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_EQUAL)
+				putc(KEY_PLUS);
+				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_BACKSLASH)
+				putc(KEY_BAR);
+				else if(r_ctrl_key == 0 && l_ctrl_key == 0) putc(key_out);
 			}
 		}
 	}
