@@ -166,11 +166,8 @@
 // Initialize the keyboard device
 void kybd_init();
 
-// Enable the keyboard to send interrupts
-void kybd_enable();
-
-// Disable the keyboard to send interrupts
-void kybd_disable();
+// Move the cursor to set row and column
+void move_cursor();
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();

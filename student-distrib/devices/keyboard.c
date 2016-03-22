@@ -105,6 +105,8 @@ int r_ctrl_key = 0;
 int l_ctrl_key = 0;
 /* determine if the key is on */
 int caps_lock = 0;
+int row = 0;
+int column = 0;
 
 void kybd_init(){
   // initialize by sending IRQ number (33?) to keybrd interrupt handler
@@ -116,6 +118,18 @@ void kybd_init(){
 
 	/* Unmask keybord interrupt on PIC */
 	enable_irq(KEYBOARD_IRQ_NUM);
+}
+
+void move_cursor(){
+	// Source: http://wiki.osdev.org/Text_Mode_Cursor
+	unsigned short position=(row*80) + column;
+
+  // cursor LOW port to vga INDEX register
+	outb(0x0F, 0x3D4);
+	outb((unsigned char)(position&0xFF), 0x3D5);
+  // cursor HIGH port to vga INDEX register
+  outb(0x0E, 0x3D4);
+	outb((unsigned char)((position>>8)&0xFF), 0x3D5);
 }
 
 void keyboard_handler_main(){
@@ -150,49 +164,81 @@ void keyboard_handler_main(){
 				     (r_ctrl_key == 0 && l_ctrl_key == 0) &&
 				   (key_out >= 'a' && key_out <= 'z'))
 					putc(key_out - 32);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '0')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '0')
 				putc(KEY_RIGHTPARENTHESIS);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '1')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '1')
 				putc(KEY_EXCLAMATION);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '2')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '2')
 				putc(KEY_AT);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '3')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '3')
 				putc(KEY_HASH);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '4')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '4')
 				putc(KEY_DOLLAR);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '5')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '5')
 				putc(KEY_PERCENT);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '6')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '6')
 				putc(KEY_CARRET);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '7')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '7')
 				putc(KEY_AMPERSAND);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '8')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '8')
 				putc(KEY_ASTERISK);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == '9')
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '9')
 				putc(KEY_LEFTPARENTHESIS);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_COMMA)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_COMMA)
 				putc(KEY_LESS);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_DOT)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_DOT)
 				putc(KEY_GREATER);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_SLASH)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_SLASH)
 				putc(KEY_QUESTION);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_SEMICOLON)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_SEMICOLON)
 				putc(KEY_COLON);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_QUOTE)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_QUOTE)
 				putc(KEY_QUOTEDOUBLE);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_LEFTBRACKET)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_LEFTBRACKET)
 				putc(KEY_LEFTCURL);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_RIGHTBRACKET)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_RIGHTBRACKET)
 				putc(KEY_RIGHTCURL);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_GRAVE)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_GRAVE)
 				putc(KEY_TILDE);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_MINUS)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_MINUS)
 				putc(KEY_UNDERSCORE);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_EQUAL)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_EQUAL)
 				putc(KEY_PLUS);
-				else if((r_shift_key == 1 || l_shift_key == 1) && key_out == KEY_BACKSLASH)
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_BACKSLASH)
+				putc(KEY_BAR);
+				else if((r_shift_key == 1 || l_shift_key == 1) &&
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_BACKSLASH)
 				putc(KEY_BAR);
 				else if(r_ctrl_key == 0 && l_ctrl_key == 0) putc(key_out);
+				else if((r_shift_key == 0 && l_shift_key == 0) &&
+				     (r_ctrl_key == 1 || l_ctrl_key == 1) && key_out == 'l') {
+							 clear();
+							 row = 0;
+							 column = 0;
+							 move_cursor();
+							 putc('L');
+						 }
 			}
 		}
 	}
