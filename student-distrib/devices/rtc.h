@@ -6,14 +6,25 @@
 #define _RTC_H
 
 #include "../types.h"
+ 
+#define RTC_IRQ_NUM  8
 
-#define RTC_REG_PORT     0X70 // Port used to specify the register number
-                              // and to disable NMI
-#define RW_CMOS_PORT     0x71 // Port used to read/write from from CMOS
-#define RTC_IRQ_NUM  0x08
-//initializes rtc
+/* call to initialize rtc by adding handler to IDT */
 void rtc_init();
-//rtc interrupt
+/* rtc interrupt handler */
 void rtc_handler_main();
+
+/* replace these with fops struct later */
+/* open rtc */
+int32_t rtc_open(const uint8_t * filename);
+
+/* wait until next rtc interrupt */
+int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes);
+
+/* change rtc frequency */
+int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes);
+
+/* close rtc */
+int32_t rtc_close(int32_t fd);
 
 #endif
