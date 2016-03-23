@@ -166,8 +166,8 @@
 // Initialize the keyboard device
 void kybd_init();
 
-// Move the cursor to set row and column
-void move_cursor();
+// Updates the screen as well as the line buffer
+void update(uint16_t key)
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();

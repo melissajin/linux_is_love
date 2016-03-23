@@ -27,6 +27,21 @@ clear(void)
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
     }
+    screen_x = 0;
+    screen_y = 0;
+    move_cursor();
+}
+
+void move_cursor(){
+	// Source: http://wiki.osdev.org/Text_Mode_Cursor
+	unsigned short position=(screen_y*80) + screen_x;
+
+  // cursor LOW port to vga INDEX register
+	outb(0x0F, 0x3D4);
+	outb((unsigned char)(position&0xFF), 0x3D5);
+  // cursor HIGH port to vga INDEX register
+  outb(0x0E, 0x3D4);
+	outb((unsigned char)((position>>8)&0xFF), 0x3D5);
 }
 
 /* Standard printf().
@@ -162,7 +177,7 @@ format_char_switch:
 * int32_t puts(int8_t* s);
 *   Inputs: int_8* s = pointer to a string of characters
 *   Return Value: Number of bytes written
-*	Function: Output a string to the console 
+*	Function: Output a string to the console
 */
 
 int32_t
@@ -181,7 +196,7 @@ puts(int8_t* s)
 * void putc(uint8_t c);
 *   Inputs: uint_8* c = character to print
 *   Return Value: void
-*	Function: Output a character to the console 
+*	Function: Output a character to the console
 */
 
 void
@@ -197,6 +212,7 @@ putc(uint8_t c)
         screen_x %= NUM_COLS;
         screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
     }
+    move_cursor();
 }
 
 /*
@@ -475,11 +491,11 @@ memmove(void* dest, const void* src, uint32_t n)
 *   Inputs: const int8_t* s1 = first string to compare
 *			const int8_t* s2 = second string to compare
 *			uint32_t n = number of bytes to compare
-*	Return Value: A zero value indicates that the characters compared 
+*	Return Value: A zero value indicates that the characters compared
 *					in both strings form the same string.
-*				A value greater than zero indicates that the first 
-*					character that does not match has a greater value 
-*					in str1 than in str2; And a value less than zero 
+*				A value greater than zero indicates that the first
+*					character that does not match has a greater value
+*					in str1 than in str2; And a value less than zero
 *					indicates the opposite.
 *	Function: compares string 1 and string 2 for equality
 */
