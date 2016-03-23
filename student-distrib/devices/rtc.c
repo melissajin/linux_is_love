@@ -18,6 +18,8 @@
 
 extern void rtc_isr();
 
+static int reading;
+
 void rtc_init(){
 
     char curr;
@@ -32,6 +34,8 @@ void rtc_init(){
 	outb(curr | 0x40, RW_CMOS_PORT); 		// turn on bit 6 of register B
     sti();
 
+    reading = 1;
+
     enable_irq(RTC_IRQ_NUM);
 }
 
@@ -41,6 +45,8 @@ void rtc_handler_main(){
   // Reset the C register to get the next interrupt
   outb(REG_C, RTC_REG_PORT);
   inb(RW_CMOS_PORT);
+
+  reading = 0;
 
   send_eoi(RTC_IRQ_NUM);
 }
@@ -52,7 +58,9 @@ unsigned long rtc_open() {
 
 /* wait until next rtc interrupt */
 unsigned long rtc_read() {
-
+    while(reading);  /* spin until an interrupt happens */
+    reading = 1;
+    return 0;
 }
 
 /* change rtc frequency */
