@@ -172,7 +172,20 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	//asm volatile("int $0x80");
+	rtc_open();
+	rtc_write(2);
+	clear();
+	int i;
+	for(i = 0; i < 10; i++) {
+		printf("%d\n", i);
+		rtc_read();
+	}
+	rtc_write(256);
+
+	for(i = 0; i < 512; i++) {
+		rtc_read();
+	}
+	rtc_close();
 
 	/* Execute the first program (`shell') ... */
 
