@@ -167,7 +167,7 @@
 void kybd_init();
 
 // Updates the screen as well as the line buffer
-void update(uint16_t key)
+void update(uint16_t key);
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();

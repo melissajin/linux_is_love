@@ -99,7 +99,7 @@ static uint16_t kybd_keys [] = {
 };
 
 /* Line buffer as well as the current size of it */
-uint16_t line_buf[128] = 0;
+uint16_t line_buf[128];
 uint16_t buf_count = 0;
 
 /* determine if the key is pressed */
@@ -238,7 +238,7 @@ void keyboard_handler_main(){
 				update(key_out);
 				}
 				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_QUOTE)
+				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_QUOTE){
 				key_out = KEY_QUOTEDOUBLE;
 				update(key_out);
 				}
