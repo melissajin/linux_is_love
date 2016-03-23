@@ -18,7 +18,7 @@
 
 extern void rtc_isr();
 
-static int reading;
+static int reading, open = 0;
 
 void rtc_init(){
 
@@ -35,8 +35,6 @@ void rtc_init(){
     sti();
 
     reading = 1;
-
-    enable_irq(RTC_IRQ_NUM);
 }
 
 void rtc_handler_main(){
@@ -53,7 +51,11 @@ void rtc_handler_main(){
 
 /* open rtc */
 unsigned long rtc_open() {
-
+    if(!open) {
+        rtc_init();
+        enable_irq(RTC_IRQ_NUM);
+        open = 1;
+    }
 }
 
 /* wait until next rtc interrupt */
@@ -90,5 +92,6 @@ unsigned long rtc_write(unsigned long rate) {
 
 /* close rtc */
 unsigned long rtc_close() {
-
+    disable_irq(RTC_IRQ_NUM);
+    open = 0;
 }
