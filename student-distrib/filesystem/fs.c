@@ -1,186 +1,165 @@
-/* kernel.c - the C part of the kernel
- * vim:ts=4 noexpandtab
+
+#include "fs.h"
+
+ /* Initialize filesystem */
+ void fs_init(module_t* file_sys){
+ 	//type cast the file system in the boot info to be our structs
+ 	uint32_t *temp;
+ 	bootblock = file_sys->mod_start;
+ 	//temp = bootblock + size of bootblock;
+
+ 	for(i = 0; i < NUM_INODES; i++){
+ 		//inodes[i] = temp ;
+ 		//temp = temp + size of inodes;
+ 	}
+
+ 	for( i = 0; i< NUM_DATA_BLOCKS; i++)
+ 		//datablocks[i] = temp
+ 		//temp = temp + size of datablocks
+ 	}
+
+
+ }
+
+/* read_dentry_by_name
+ *	  DESCRIPTION: reads the dentry by filename
+ *    INPUTS: fname - filename specifying the file to read from
+ *			  dentry - pointer to dentry block to fill
+ *    OUTPUTS: none
+ *    RETURN VALUE: 0 on success, -1 on failure (nonexistant file)
+ *    SIDE EFFECTS: fills the second arg (dentry) with file name, 
+ * 					file type, and inode number
  */
+ int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry){
+ 	int32_t i, j;
 
-#include "multiboot.h"
-#include "x86_desc.h"
-#include "lib.h"
-#include "i8259.h"
-#include "devices/keyboard.h"
-#include "devices/rtc.h"
-#include "debug.h"
-#include "virtualmem.h"
-#include "isr.h"
+ 	for(i = 0; i < NUM_INODES; i++){
+ 		// probably have to change third arg in strncmp to min str length so no seg fault
+ 		if(!strncmp((int8_t *) fname, (int8_t *) bootblock.dentry[i].fname, FNAME_LEN)){
+ 			dentry_t* dentry_ptr = &bootblock.dentry[i];
+ 			for(j = 0; j < FNAME_LEN; j++){
+ 				dentry -> fname[j] = dentry_ptr -> fname[j];
+ 			}
+ 			dentry -> ftype = dentry_ptr -> ftype;
+ 			dentry -> inode = dentry_ptr -> inode;
+ 			for(j = 0; j < 6; j++){
+ 				dentry -> pad[j] = dentry_ptr -> pad[j];
+ 			}
+ 			return 0;
+ 		}
+ 	}
+ 	return -1;
+ }
 
-/* Macros. */
-/* Check if the bit BIT in FLAGS is set. */
-#define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
+/* read_dentry_by_index
+ *	  DESCRIPTION: reads the dentry by index number
+ *    INPUTS: index - index specifying file to read from
+ *			  dentry - pointer to dentry block to fill
+ *    OUTPUTS: none
+ *    RETURN VALUE: 0 on success, -1 on failure (invalid index)
+ *    SIDE EFFECTS: fills the second arg (dentry) with file name, 
+ * 					file type, and inode number
+ */ 
+ int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry){
+ 	int32_t i;
 
-/* Check if MAGIC is valid and print the Multiboot information structure
-   pointed by ADDR. */
-void
-entry (unsigned long magic, unsigned long addr)
-{
-	multiboot_info_t *mbi;
+ 	if(valid_inode(index)){
+ 		dentry_t* dentry_ptr = &bootblock.dentry[index];
+ 		for(i = 0; i < FNAME_LEN; i++){
+ 			dentry -> fname[i] = dentry_ptr -> fname[i];
+ 		}
+ 		dentry -> ftype = dentry_ptr -> ftype;
+ 		dentry -> inode = dentry_ptr -> inode;
+ 		for(i = 0; i < 6; i++){
+ 			dentry -> pad[i] = dentry_ptr -> pad[i];
+ 		}
+ 		return 0;
+ 	}
+ 	return -1;
+ }
+ 
+ /* read_data
+ *	  DESCRIPTION: reads 'length' bytes starting from position 'offset'
+ * 				   in the file with inode number 'inode'.
+ *    INPUTS: inode - inode number specifying file to read from
+ 			  offset - position to start reading from in the file
+ 			  buf - buffer to be filled by the bytes read from the file
+ 			  length - number of bytes to read
+ *    OUTPUTS: none
+ *    RETURN VALUE: number of bytes read and placed in the buffer
+ *    SIDE EFFECTS: fills the third arg (buf) with the bytes read from
+ *					the file
+ */
+ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length){
+ 	uint32_t i;
+ 	int32_t bytes_read;
+ 	int32_t curr_data_block; // data to copy to buf
+ 	int32_t off_data_block; // data block number in inode
+ 	int32_t new_offset; // offset once inside correct data block
+ 	bytes_read = 0;
 
-	/* Clear the screen. */
-	clear();
+ 	if(valid_inode(inode)){
+ 		if(!(offset >= inodes[inode].length)){
 
-	/* Am I booted by a Multiboot-compliant boot loader? */
-	if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-	{
-		printf ("Invalid magic number: 0x%#x\n", (unsigned) magic);
-		return;
-	}
+ 			/* calculate correct data block and offset to start copying from */
+ 			new_offset = offset % CHARS_PER_BLOCK;
+ 			off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
+ 			curr_data_block = inodes[inode].data_block[off_data_block];
 
-	/* Set MBI to the address of the Multiboot information structure. */
-	mbi = (multiboot_info_t *) addr;
+ 			/* copy data to buf */
+ 			for(i = 0; i < length; i++){
+ 				buf[i] = data_blocks[curr_data_block].data[new_offset++];
+ 				bytes_read++;
+				/* move to next data block */
+ 				if(new_offset >= CHARS_PER_BLOCK){ 
+ 					curr_data_block = inodes[inode].data_block[off_data_block++];
+ 					new_offset = 0;
+ 				}
+ 			}
+ 		}
+ 		
+ 	}
+ 	return bytes_read;
+ }
 
-	/* Print out the flags. */
-	printf ("flags = 0x%#x\n", (unsigned) mbi->flags);
+ /* filesystem system calls */
 
-	/* Are mem_* valid? */
-	if (CHECK_FLAG (mbi->flags, 0))
-		printf ("mem_lower = %uKB, mem_upper = %uKB\n",
-				(unsigned) mbi->mem_lower, (unsigned) mbi->mem_upper);
+ int32_t fs_halt (uint8_t status){
+ 	return -1;
+ }
 
-	/* Is boot_device valid? */
-	if (CHECK_FLAG (mbi->flags, 1))
-		printf ("boot_device = 0x%#x\n", (unsigned) mbi->boot_device);
+ int32_t fs_execute (const uint8_t* command){
+ 	return -1;
+ }
 
-	/* Is the command line passed? */
-	if (CHECK_FLAG (mbi->flags, 2))
-		printf ("cmdline = %s\n", (char *) mbi->cmdline);
+ int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
+ 	return -1;
+ }
 
-	if (CHECK_FLAG (mbi->flags, 3)) {
-		int mod_count = 0;
-		int i;
-		module_t* mod = (module_t*)mbi->mods_addr;
-		while(mod_count < mbi->mods_count) {
-			printf("Module %d loaded at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_start);
-			printf("Module %d ends at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_end);
-			printf("First few bytes of module:\n");
-			for(i = 0; i<16; i++) {
-				printf("0x%x ", *((char*)(mod->mod_start+i)));
-			}
-			printf("\n");
-			mod_count++;
-			mod++;
-		}
-	}
-	/* Bits 4 and 5 are mutually exclusive! */
-	if (CHECK_FLAG (mbi->flags, 4) && CHECK_FLAG (mbi->flags, 5))
-	{
-		printf ("Both bits 4 and 5 are set.\n");
-		return;
-	}
+ int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes){ 
+ 	return -1; 
+ }
 
-	/* Is the section header table of ELF valid? */
-	if (CHECK_FLAG (mbi->flags, 5))
-	{
-		elf_section_header_table_t *elf_sec = &(mbi->elf_sec);
+ int32_t fs_open (const uint8_t* filename){ 
+ 	return 0; 
+ }
 
-		printf ("elf_sec: num = %u, size = 0x%#x,"
-				" addr = 0x%#x, shndx = 0x%#x\n",
-				(unsigned) elf_sec->num, (unsigned) elf_sec->size,
-				(unsigned) elf_sec->addr, (unsigned) elf_sec->shndx);
-	}
+ int32_t fs_close (int32_t fd){ 
+ 	return 0; 
+ }
 
-	/* Are mmap_* valid? */
-	if (CHECK_FLAG (mbi->flags, 6))
-	{
-		memory_map_t *mmap;
+ int32_t fs_getargs (uint8_t* buf, int32_t nbytes){
+ 	return -1;
+ }
 
-		printf ("mmap_addr = 0x%#x, mmap_length = 0x%x\n",
-				(unsigned) mbi->mmap_addr, (unsigned) mbi->mmap_length);
-		for (mmap = (memory_map_t *) mbi->mmap_addr;
-				(unsigned long) mmap < mbi->mmap_addr + mbi->mmap_length;
-				mmap = (memory_map_t *) ((unsigned long) mmap
-					+ mmap->size + sizeof (mmap->size)))
-			printf (" size = 0x%x,     base_addr = 0x%#x%#x\n"
-					"     type = 0x%x,  length    = 0x%#x%#x\n",
-					(unsigned) mmap->size,
-					(unsigned) mmap->base_addr_high,
-					(unsigned) mmap->base_addr_low,
-					(unsigned) mmap->type,
-					(unsigned) mmap->length_high,
-					(unsigned) mmap->length_low);
-	}
+ int32_t fs_vidmap (uint8_t** screen_start){
+ 	return -1;
+ }
 
-	/* Construct an LDT entry in the GDT */
-	{
-		seg_desc_t the_ldt_desc;
-		the_ldt_desc.granularity    = 0;
-		the_ldt_desc.opsize         = 1;
-		the_ldt_desc.reserved       = 0;
-		the_ldt_desc.avail          = 0;
-		the_ldt_desc.present        = 1;
-		the_ldt_desc.dpl            = 0x0;
-		the_ldt_desc.sys            = 0;
-		the_ldt_desc.type           = 0x2;
+ int32_t fs_set_handler (int32_t signum, void* handler_address){
+ 	return -1;
+ }
 
-		SET_LDT_PARAMS(the_ldt_desc, &ldt, ldt_size);
-		ldt_desc_ptr = the_ldt_desc;
-		lldt(KERNEL_LDT);
-	}
-
-	/* Construct a TSS entry in the GDT */
-	{
-		seg_desc_t the_tss_desc;
-		the_tss_desc.granularity    = 0;
-		the_tss_desc.opsize         = 0;
-		the_tss_desc.reserved       = 0;
-		the_tss_desc.avail          = 0;
-		the_tss_desc.seg_lim_19_16  = TSS_SIZE & 0x000F0000;
-		the_tss_desc.present        = 1;
-		the_tss_desc.dpl            = 0x0;
-		the_tss_desc.sys            = 0;
-		the_tss_desc.type           = 0x9;
-		the_tss_desc.seg_lim_15_00  = TSS_SIZE & 0x0000FFFF;
-
-		SET_TSS_PARAMS(the_tss_desc, &tss, tss_size);
-
-		tss_desc_ptr = the_tss_desc;
-
-		tss.ldt_segment_selector = KERNEL_LDT;
-		tss.ss0 = KERNEL_DS;
-		tss.esp0 = 0x800000;
-		ltr(KERNEL_TSS);
-	}
-
-	/* Init the PIC */
-	i8259_init();
-
-	/* Initialize devices, memory, filesystem, enable device interrupts on the
-	 * PIC, any other initialization stuff... */
-	virtualmem_init();
-	fs_init((module_t *)mbi->mods_addr);
-
-	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
-	kybd_init();
-
-	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
-	rtc_init();
-
-	/* load IDT */
-	isrs_install();
-	lidt(idt_desc_ptr);
-
-	/* Enable interrupts */
-	/* Do not enable the following until after you have set up your
-	 * IDT correctly otherwise QEMU will triple fault and simple close
-	 * without showing you any output */
-	printf("Enabling Interrupts\n");
-	sti();
-
-	//asm volatile("int $0x80");
-	
-	/* test paging */
-	char * a = (char *) 0x800000;
-	*a = 'a';
-
-	/* Execute the first program (`shell') ... */
-
-	/* Spin (nicely, so we don't chew up cycles) */
-	asm volatile(".1: hlt; jmp .1;");
-}
+ int32_t fs_sigreturn (void){
+ 	return -1;
+ }
