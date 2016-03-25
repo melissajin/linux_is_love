@@ -12,6 +12,8 @@
 #define KEYBOARD_ENABLE   0xAE
 #define KEYBOARD_DISABLE  0xAD
 #define KEYBOARD_IRQ_NUM  0x01
+#define LINE_BUF_MAX      128
+#define NULL_CHAR         '\0'
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
 #define KEY_SPACE         ' '

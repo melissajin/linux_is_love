@@ -99,7 +99,7 @@ static uint16_t kybd_keys [] = {
 };
 
 /* Line buffer as well as the current size of it */
-uint16_t line_buf[128];
+uint16_t line_buf[LINE_BUF_MAX];
 uint16_t buf_count = 0;
 
 /* determine if the key is pressed */
@@ -111,20 +111,21 @@ int l_ctrl_key = 0;
 int caps_lock = 0;
 
 void kybd_init(){
-  // initialize by sending IRQ number (33?) to keybrd interrupt handler
-  // I'm going to need the vector table of the idt
-  //setvector(irq_num, kybrd_intr);
-
 	/* Populate IDT entry for keyboard */
 	set_int_gate(0x21, (unsigned long) kybd_isr); //0x21 is the interrupt number in the IDT
 
 	/* Unmask keybord interrupt on PIC */
 	enable_irq(KEYBOARD_IRQ_NUM);
+
+	/* Set all of the values in the line buffer to the null character */
+	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 }
 
 void update(uint16_t key){
 	if(key == KEY_RETURN){
-
+		putc(key);
+		memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
+		buf_count = 0;
 	}
 	else if(buf_count < 127){
 		putc(key);

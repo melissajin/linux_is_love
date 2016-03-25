@@ -32,7 +32,7 @@ clear(void)
     move_cursor();
 }
 
-void move_cursor(){
+void move_cursor(void){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
 	unsigned short position=(screen_y*80) + screen_x;
 
@@ -202,6 +202,7 @@ puts(int8_t* s)
 void
 putc(uint8_t c)
 {
+    int increment_y = 0;
     if(c == '\n' || c == '\r') {
         screen_y++;
         screen_x=0;
@@ -209,8 +210,9 @@ putc(uint8_t c)
         *(uint8_t *)(video_mem + ((NUM_COLS*screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS*screen_y + screen_x) << 1) + 1) = ATTRIB;
         screen_x++;
+        if(screen_x > 79) increment_y = 1;
         screen_x %= NUM_COLS;
-        screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        screen_y = (screen_y + increment_y + (screen_x / NUM_COLS)) % NUM_ROWS;
     }
     move_cursor();
 }
