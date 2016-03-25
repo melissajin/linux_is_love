@@ -32,7 +32,8 @@ clear(void)
     move_cursor();
 }
 
-void move_cursor(void){
+void
+move_cursor(void){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
 	unsigned short position=(screen_y*80) + screen_x;
 
@@ -42,6 +43,24 @@ void move_cursor(void){
   // cursor HIGH port to vga INDEX register
   outb(0x0E, 0x3D4);
 	outb((unsigned char)((position>>8)&0xFF), 0x3D5);
+}
+
+void
+backspace_fnc() {
+  if(screen_x == 0){
+    screen_x = 79;
+    screen_y--;
+    putc(' ');
+    screen_x = 79;
+    screen_y--;
+    move_cursor();
+  }
+  else{
+    screen_x--;
+    putc(' ');
+    screen_x--;
+    move_cursor();
+  }
 }
 
 /* Standard printf().

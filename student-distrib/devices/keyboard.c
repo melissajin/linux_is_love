@@ -127,6 +127,13 @@ void update(uint16_t key){
 		memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 		buf_count = 0;
 	}
+	else if(key == KEY_BACKSPACE){
+		if(buf_count != 0){
+			backspace_fnc();
+			buf_count--;
+			line_buf[buf_count] = '\0';
+		}
+	}
 	else if(buf_count < 127){
 		putc(key);
 		line_buf[buf_count] = key;
@@ -278,7 +285,8 @@ void keyboard_handler_main(){
 				key_out = KEY_BAR;
 				update(key_out);
 				}
-				else if(r_ctrl_key == 0 && l_ctrl_key == 0){
+				else if(r_ctrl_key == 0 && l_ctrl_key == 0 &&
+								l_shift_key == 0 && r_shift_key == 0){
 					update(key_out);
 				}
 				else if((r_shift_key == 0 && l_shift_key == 0) &&
