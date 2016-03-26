@@ -46,7 +46,20 @@ move_cursor(void){
 }
 
 void
-backspace_fnc() {
+vert_scroll(void){
+  int32_t i;
+  for(i=0; i<(NUM_ROWS - 1)*NUM_COLS; i++) {
+    *(uint8_t *)(video_mem + (i << 1)) = *(uint8_t *)(video_mem + ((i + NUM_COLS) << 1));
+    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+  }
+  for(i=(NUM_ROWS - 1)*NUM_COLS; i<NUM_ROWS*NUM_COLS; i++){
+    *(uint8_t *)(video_mem + (i << 1)) = ' ';
+    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+  }
+}
+
+void
+backspace_fnc(void){
   if(screen_x == 0){
     screen_x = 79;
     screen_y--;
@@ -225,13 +238,23 @@ putc(uint8_t c)
     if(c == '\n' || c == '\r') {
         screen_y++;
         screen_x=0;
+        if(screen_y > NUM_ROWS - 1){
+          vert_scroll();
+          screen_y = NUM_ROWS - 1;
+        }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS*screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS*screen_y + screen_x) << 1) + 1) = ATTRIB;
         screen_x++;
-        if(screen_x > 79) increment_y = 1;
+        if(screen_x > NUM_COLS - 1) increment_y = 1;
         screen_x %= NUM_COLS;
-        screen_y = (screen_y + increment_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        if((screen_y + increment_y + (screen_x / NUM_COLS)) > NUM_ROWS - 1){
+          vert_scroll();
+          screen_y = NUM_ROWS - 1;
+        }
+        else{
+          screen_y = (screen_y + increment_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        }
     }
     move_cursor();
 }
