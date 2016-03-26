@@ -1,18 +1,10 @@
 
 #include "fs.h"
 
-static filesys_t *file_system;
-
-static int32_t valid_inode(int32_t inode){
- 	if(inode < 0 || inode >= NUM_INODES){
- 		return 0;
- 	}
- 	return 1;
- }
-
  /* Initialize filesystem */
- void fs_init(module_t *mem_mod){
-	file_system =  (filesys_t*)mem_mod->mod_start;
+ void fs_init(module_t* file_sys){
+ 	//type cast the file system in the boot info to be our structs
+ 	bootblock = file_sys->mod_start;
  }
 
 /* read_dentry_by_name
@@ -29,8 +21,8 @@ static int32_t valid_inode(int32_t inode){
 
  	for(i = 0; i < NUM_INODES; i++){
  		// probably have to change third arg in strncmp to min str length so no seg fault
- 		if(!strncmp((int8_t *) fname, (int8_t *) file_system->bootblock.dentry[i].fname, FNAME_LEN)){
- 			dentry_t* dentry_ptr = &file_system->bootblock.dentry[i];
+ 		if(!strncmp((int8_t *) fname, (int8_t *) bootblock.dentry[i].fname, FNAME_LEN)){
+ 			dentry_t* dentry_ptr = &bootblock.dentry[i];
  			for(j = 0; j < FNAME_LEN; j++){
  				dentry -> fname[j] = dentry_ptr -> fname[j];
  			}
@@ -58,7 +50,7 @@ static int32_t valid_inode(int32_t inode){
  	int32_t i;
 
  	if(valid_inode(index)){
- 		dentry_t* dentry_ptr = &file_system->bootblock.dentry[index];
+ 		dentry_t* dentry_ptr = &bootblock.dentry[index];
  		for(i = 0; i < FNAME_LEN; i++){
  			dentry -> fname[i] = dentry_ptr -> fname[i];
  		}
@@ -93,20 +85,20 @@ static int32_t valid_inode(int32_t inode){
  	bytes_read = 0;
 
  	if(valid_inode(inode)){
- 		if(!(offset >= file_system->inodes[inode].length)){
+ 		if(!(offset >= inodes[inode].length)){
 
  			/* calculate correct data block and offset to start copying from */
  			new_offset = offset % CHARS_PER_BLOCK;
  			off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
- 			curr_data_block = file_system->inodes[inode].data_block[off_data_block];
+ 			curr_data_block = inodes[inode].data_block[off_data_block];
 
  			/* copy data to buf */
  			for(i = 0; i < length; i++){
- 				buf[i] = file_system->data_blocks[curr_data_block].data[new_offset++];
+ 				buf[i] = data_blocks[curr_data_block].data[new_offset++];
  				bytes_read++;
 				/* move to next data block */
  				if(new_offset >= CHARS_PER_BLOCK){ 
- 					curr_data_block = file_system->inodes[inode].data_block[off_data_block++];
+ 					curr_data_block = inodes[inode].data_block[off_data_block++];
  					new_offset = 0;
  				}
  			}
@@ -117,14 +109,6 @@ static int32_t valid_inode(int32_t inode){
  }
 
  /* filesystem system calls */
-
- int32_t fs_halt (uint8_t status){
- 	return -1;
- }
-
- int32_t fs_execute (const uint8_t* command){
- 	return -1;
- }
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	return -1;
@@ -140,20 +124,4 @@ static int32_t valid_inode(int32_t inode){
 
  int32_t fs_close (int32_t fd){ 
  	return 0; 
- }
-
- int32_t fs_getargs (uint8_t* buf, int32_t nbytes){
- 	return -1;
- }
-
- int32_t fs_vidmap (uint8_t** screen_start){
- 	return -1;
- }
-
- int32_t fs_set_handler (int32_t signum, void* handler_address){
- 	return -1;
- }
-
- int32_t fs_sigreturn (void){
- 	return -1;
  }
