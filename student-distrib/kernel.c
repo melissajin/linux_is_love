@@ -11,6 +11,7 @@
 #include "debug.h"
 #include "virtualmem.h"
 #include "isr.h"
+#include "fs.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -154,8 +155,8 @@ entry (unsigned long magic, unsigned long addr)
 	/* Initialize devices, memory, filesystem, enable device interrupts on the
 	 * PIC, any other initialization stuff... */
 	virtualmem_init();
-	
-	fs_init(mbi->mod_addr);
+	fs_init((module_t*)mbi->mods_addr);
+
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
 	kybd_init();
 
