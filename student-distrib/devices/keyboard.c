@@ -3,6 +3,7 @@
  */
 
 #include "keyboard.h"
+#include "terminal.h"
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
@@ -99,16 +100,64 @@ static uint16_t kybd_keys [] = {
 };
 
 /* Line buffer as well as the current size of it */
-int8_t line_buf[LINE_BUF_MAX];
-uint16_t buf_count = 0;
+static int8_t line_buf[LINE_BUF_MAX];
+static uint16_t buf_count = 0;
+
+static int reading = 0;
 
 /* determine if the key is pressed */
-int r_shift_key = 0;
-int l_shift_key = 0;
-int r_ctrl_key = 0;
-int l_ctrl_key = 0;
+static int r_shift_key = 0;
+static int l_shift_key = 0;
+static int r_ctrl_key = 0;
+static int l_ctrl_key = 0;
+static int hit_enter = 0;
 /* determine if the key is on */
-int caps_lock = 0;
+static int caps_lock = 0;
+
+int32_t terminal_open(const uint8_t* filename){
+  return 0;
+}
+
+int32_t terminal_close(int32_t fd){
+  return 0;
+}
+
+int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
+  int diff, i;
+
+	/* wait until user hit enter */
+	reading = 1;
+	hit_enter = 0;
+	while(!hit_enter);
+
+	cli();
+
+	/* sanity check on nbytes */
+	if(nbytes > LINE_BUF_MAX) nbytes = LINE_BUF_MAX;
+
+	/* read nbytes from line buffer */
+	diff = LINE_BUF_MAX - nbytes;
+	memcpy(buf, line_buf, nbytes);
+
+	/* move unread bytes in line buffer to beginning */
+	memmove(line_buf, line_buf + nbytes, diff);
+	/* clear rest of line buffer */
+	memset(line_buf + diff, NULL_CHAR, nbytes);
+	buf_count = diff;
+
+	sti();
+
+	reading = 0;
+	hit_enter = 0;
+}
+
+int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
+	int i;
+	for(i = 0; i < nbytes; i++){
+		putc(buf[i]);
+	}
+	return 0;
+}
 
 void kybd_init(){
 	/* Populate IDT entry for keyboard */
@@ -124,17 +173,21 @@ void kybd_init(){
 void update(uint16_t key){
 	if(key == KEY_RETURN){
 		putc(key);
-		memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
-		buf_count = 0;
+		line_buf[buf_count] = '\n';
+		hit_enter = 1;
+		if(!reading) {
+			memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
+			buf_count = 0;
+		}
 	}
 	else if(key == KEY_BACKSPACE){
 		if(buf_count != 0){
 			backspace_fnc();
 			buf_count--;
-			line_buf[buf_count] = '\0';
+			line_buf[buf_count] = NULL_CHAR;
 		}
 	}
-	else if(buf_count < 127){
+	else if(buf_count < LINE_BUF_MAX - 1){
 		putc(key);
 		line_buf[buf_count] = key;
 		buf_count++;
@@ -152,8 +205,8 @@ void keyboard_handler_main(){
 		scancode = inb(KEYBOARD_PORT_DATA);
 		uint16_t key_out;
 
-		if((scancode & 0x80)){ //0x80 is a flag for key release check
-			scancode -= 0x80; // Get the actual scancode value
+		if((scancode & MASK_KEY_PRESS)){ //0x80 is a flag for key release check
+			scancode -= MASK_KEY_PRESS; // Get the actual scancode value
 			key_out = kybd_keys[scancode];
 			if(key_out == KEY_RSHIFT) r_shift_key = 0;
 			else if(key_out == KEY_LSHIFT) l_shift_key = 0;
@@ -161,7 +214,7 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_RCTRL) l_ctrl_key = 0;
 		}
 		/* If key not released, print to screen */
-		else if(!(scancode & 0x80)){ //0x80 is a flag for key release check
+		else if(!(scancode & MASK_KEY_PRESS)){ //0x80 is a flag for key release check
 			key_out = kybd_keys[scancode];
 			if(key_out == KEY_CAPSLOCK) caps_lock = !caps_lock;
 			else if(key_out == KEY_RSHIFT) r_shift_key = 1;
@@ -172,7 +225,7 @@ void keyboard_handler_main(){
 				if((caps_lock == 1 || r_shift_key == 1 || l_shift_key == 1) &&
 				     (r_ctrl_key == 0 && l_ctrl_key == 0) &&
 				   (key_out >= 'a' && key_out <= 'z')){
-					key_out -= 32;
+					key_out -= 'a' - 'A';  /* offset for capital chars */
 					update(key_out);
 					}
 				else if((r_shift_key == 1 || l_shift_key == 1) &&

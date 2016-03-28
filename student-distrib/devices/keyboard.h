@@ -12,6 +12,7 @@
 #define KEYBOARD_ENABLE   0xAE
 #define KEYBOARD_DISABLE  0xAD
 #define KEYBOARD_IRQ_NUM  0x01
+#define MASK_KEY_PRESS    0x80
 #define LINE_BUF_MAX      128
 #define NULL_CHAR         '\0'
 // Scancode for keyboard keys
@@ -165,6 +166,14 @@
 #define KEY_UNKNOWN           0x0000
 #define KEY_NUMKEYCODES       0x0000
 
+int32_t terminal_open(const uint8_t* filename);
+
+int32_t terminal_close(int32_t fd);
+
+int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes);
+
+int32_t terminal_write(int32_t fd, void* buf, int32_t nbytes);
+
 // Initialize the keyboard device
 void kybd_init();
 
@@ -173,4 +182,5 @@ void update(uint16_t key);
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();
+
 #endif

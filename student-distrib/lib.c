@@ -35,7 +35,7 @@ clear(void)
 void
 move_cursor(void){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
-	unsigned short position=(screen_y*80) + screen_x;
+	unsigned short position=(screen_y*NUM_COLS) + screen_x;
 
   // cursor LOW port to vga INDEX register
 	outb(0x0F, 0x3D4);
@@ -61,10 +61,10 @@ vert_scroll(void){
 void
 backspace_fnc(void){
   if(screen_x == 0){
-    screen_x = 79;
+    screen_x = NUM_COLS - 1;
     screen_y--;
     putc(' ');
-    screen_x = 79;
+    screen_x = NUM_COLS - 1;
     screen_y--;
     move_cursor();
   }
