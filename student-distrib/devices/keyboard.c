@@ -292,6 +292,7 @@ void keyboard_handler_main(){
 				else if((r_shift_key == 0 && l_shift_key == 0) &&
 				     (r_ctrl_key == 1 || l_ctrl_key == 1) && key_out == 'l') {
 							 clear();
+							 puts(line_buf);
 				}
 			}
 		}
