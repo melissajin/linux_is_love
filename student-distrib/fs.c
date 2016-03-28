@@ -91,8 +91,7 @@ static bootblock_t* bootblock;
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
 	off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
-	curr_inode = (inode_t*) bootblock;
-	curr_inode += (1+inode);
+	curr_inode = (inode_t*)((uint8_t*) bootblock + ((inode+1) * BLOCK_SIZE));
 	
 	curr_data_block = (data_block_t*) (bootblock);
 	curr_data_block += (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block]);
@@ -118,12 +117,12 @@ static bootblock_t* bootblock;
 
  void fs_tests(){
  	clear();
- 	//dentry_t dentry;
- 	//dentry_t dentry2;
+ 	dentry_t dentry;
+ 	dentry_t dentry2;
  	uint8_t buf[174];
  	//uint8_t name[10] = "frame1.txt";
 
-	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
+	printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
 	printf("num inodes: %d\n", bootblock->inode_cnt);
 	printf("num data blocks: %d\n", bootblock->data_block_cnt);
 
@@ -136,7 +135,7 @@ static bootblock_t* bootblock;
  	printf("read by name: %d\n", read_dentry_by_name("frame1.txt", &dentry2));
  	printf("fname: %s\n", dentry2.fname);
  	printf("ftype: %d\n", dentry2.ftype);
- 	printf("inode: %d\n", dentry2.inode);*/
+ 	printf("inode: %d\n", dentry2.inode);
 
 	printf("read data: %d\n", read_data(13,0,&buf, 177));
  	printf("buf: %s\n", buf);

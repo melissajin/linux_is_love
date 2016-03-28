@@ -33,7 +33,6 @@
  typedef struct inode {
  	int32_t length;
  	int32_t data_block[12]; /* number based on lecture slides */
- 	int32_t pad[1011];
  } inode_t;
 
  typedef struct data_block {

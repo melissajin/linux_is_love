@@ -41,7 +41,7 @@ void rtc_init(){
 
 void rtc_handler_main(){
  
-  test_interrupts();
+  //test_interrupts();
   // Reset the C register to get the next interrupt
   outb(REG_C, RTC_REG_PORT);
   inb(RW_CMOS_PORT);
