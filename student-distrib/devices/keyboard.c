@@ -3,7 +3,6 @@
  */
 
 #include "keyboard.h"
-#include "terminal.h"
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
@@ -123,7 +122,11 @@ int32_t terminal_close(int32_t fd){
 }
 
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
-  int diff, i;
+	int diff, i;
+
+	/* Check for null pointer */
+	if(buf == NULL)
+		return -1;
 
 	/* wait until user hit enter */
 	reading = 1;
@@ -153,6 +156,11 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 
 int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	int i;
+
+  /* Check for null pointer */
+	if(buf == NULL)
+		return -1;
+
 	for(i = 0; i < nbytes; i++){
 		putc(buf[i]);
 	}
