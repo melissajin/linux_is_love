@@ -154,8 +154,9 @@ entry (unsigned long magic, unsigned long addr)
 
 	/* Initialize devices, memory, filesystem, enable device interrupts on the
 	 * PIC, any other initialization stuff... */
+	fs_init((module_t *)mbi->mods_addr);
 	virtualmem_init();
-	fs_init((module_t*)mbi->mods_addr);
+	
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
 	kybd_init();
@@ -174,7 +175,12 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
+	fs_tests();
 	//asm volatile("int $0x80");
+	
+	/* test paging */
+	//char * a = (char *) 0x800000;
+	//*a = 'a';
 
 	/* Execute the first program (`shell') ... */
 

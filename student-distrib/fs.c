@@ -1,18 +1,11 @@
 
 #include "fs.h"
 
-static filesys_t *file_system;
-
-static int32_t valid_inode(int32_t inode){
- 	if(inode < 0 || inode >= NUM_INODES){
- 		return 0;
- 	}
- 	return 1;
- }
-
+static bootblock_t* bootblock;
+ 
  /* Initialize filesystem */
  void fs_init(module_t *mem_mod){
-	file_system =  (filesys_t*)mem_mod->mod_start;
+	bootblock =  (bootblock_t*)mem_mod->mod_start;
  }
 
 /* read_dentry_by_name
@@ -26,21 +19,22 @@ static int32_t valid_inode(int32_t inode){
  */
  int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry){
  	int32_t i, j;
+ 	dentry_t* curr_dentry; //iterate through dentries
+	curr_dentry = &(bootblock->dentry[0]);
 
- 	for(i = 0; i < NUM_INODES; i++){
- 		// probably have to change third arg in strncmp to min str length so no seg fault
- 		if(!strncmp((int8_t *) fname, (int8_t *) file_system->bootblock.dentry[i].fname, FNAME_LEN)){
- 			dentry_t* dentry_ptr = &file_system->bootblock.dentry[i];
- 			for(j = 0; j < FNAME_LEN; j++){
- 				dentry -> fname[j] = dentry_ptr -> fname[j];
+ 	for(i = 0; i < bootblock->dir_entries_cnt; i++){	
+ 		printf("fname: %s\n", curr_dentry -> fname);
+ 		if(strlen((int8_t*)fname) == strlen((int8_t *) curr_dentry->fname)){
+ 			if(!strncmp((int8_t *) fname, (int8_t *) curr_dentry->fname, strlen((int8_t*)fname))){
+ 				for(j = 0; j < strlen((int8_t*)fname); j++){
+ 					dentry -> fname[j] = curr_dentry -> fname[j];
+ 				}
+ 				dentry -> ftype = curr_dentry -> ftype;
+ 				dentry -> inode = curr_dentry -> inode;
+ 				return 0;
  			}
- 			dentry -> ftype = dentry_ptr -> ftype;
- 			dentry -> inode = dentry_ptr -> inode;
- 			for(j = 0; j < 6; j++){
- 				dentry -> pad[j] = dentry_ptr -> pad[j];
- 			}
- 			return 0;
  		}
+ 		curr_dentry++;
  	}
  	return -1;
  }
@@ -56,17 +50,16 @@ static int32_t valid_inode(int32_t inode){
  */ 
  int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry){
  	int32_t i;
+ 	dentry_t* curr_dentry; //iterate through dentries
+ 	
 
- 	if(valid_inode(index)){
- 		dentry_t* dentry_ptr = &file_system->bootblock.dentry[index];
+ 	if(index > 0 && index < bootblock->dir_entries_cnt){
+ 		curr_dentry = &(bootblock->dentry[index]);
  		for(i = 0; i < FNAME_LEN; i++){
- 			dentry -> fname[i] = dentry_ptr -> fname[i];
+ 			dentry -> fname[i] = curr_dentry -> fname[i];
  		}
- 		dentry -> ftype = dentry_ptr -> ftype;
- 		dentry -> inode = dentry_ptr -> inode;
- 		for(i = 0; i < 6; i++){
- 			dentry -> pad[i] = dentry_ptr -> pad[i];
- 		}
+ 		dentry -> ftype = curr_dentry -> ftype;
+ 		dentry -> inode = curr_dentry -> inode;
  		return 0;
  	}
  	return -1;
@@ -87,45 +80,67 @@ static int32_t valid_inode(int32_t inode){
  int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length){
  	uint32_t i;
  	int32_t bytes_read;
- 	int32_t curr_data_block; // data to copy to buf
+ 	data_block_t* curr_data_block; // data to copy to buf
  	int32_t off_data_block; // data block number in inode
  	int32_t new_offset; // offset once inside correct data block
+ 	inode_t* curr_inode;
  	bytes_read = 0;
 
- 	if(valid_inode(inode)){
- 		if(!(offset >= file_system->inodes[inode].length)){
+ 	if(inode > 0 && inode < bootblock->inode_cnt){
+ 		// use pointer arithmatic to calculate address of desired inode
+ 		curr_inode = (inode_t*) ((&bootblock) + (1 + inode)*BLOCK_SIZE);
+ 		printf("length: %d\n", curr_inode->length);
+ 		//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
+ 		// calculate correct data block and offset to start copying from
+ 		new_offset = offset % CHARS_PER_BLOCK;
+ 		off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
+ 		curr_data_block = (data_block_t*) (&(bootblock) + (1 + bootblock->inode_cnt + off_data_block)*BLOCK_SIZE);
 
- 			/* calculate correct data block and offset to start copying from */
- 			new_offset = offset % CHARS_PER_BLOCK;
- 			off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
- 			curr_data_block = file_system->inodes[inode].data_block[off_data_block];
-
- 			/* copy data to buf */
- 			for(i = 0; i < length; i++){
- 				buf[i] = file_system->data_blocks[curr_data_block].data[new_offset++];
+ 		// copy data to buf
+ 		for(i = 0; i < length; i++){
+ 				//check for EOF
+ 			if(bytes_read + offset < curr_inode->length){
+ 				buf[i] = curr_data_block->data[new_offset++];
  				bytes_read++;
-				/* move to next data block */
+				// move to next data block
  				if(new_offset >= CHARS_PER_BLOCK){ 
- 					curr_data_block = file_system->inodes[inode].data_block[off_data_block++];
+ 					curr_data_block++;
  					new_offset = 0;
  				}
  			}
+
  		}
- 		
  	}
  	return bytes_read;
  }
 
+ void fs_tests(){
+ 	clear();
+ 	//dentry_t* dentry;
+ 	//dentry_t* dentry2;
+ 	uint8_t* buf;
+ 	//uint8_t name[10] = "frame1.txt";
+
+	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
+	printf("num inodes: %d\n", bootblock->inode_cnt);
+	printf("num data blocks: %d\n", bootblock->data_block_cnt);
+
+ 	printf("read by index: %d\n", read_dentry_by_index(1, dentry));
+ 	printf("fname: %s\n", dentry -> fname);
+ 	printf("ftype: %d\n", dentry -> ftype);
+ 	printf("inode: %d\n", dentry -> inode);*/
+
+ 	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
+ 	/*printf("read by name: %d\n", read_dentry_by_name("frame1.txt", dentry));
+ 	printf("fname: %s\n", dentry -> fname);
+ 	printf("ftype: %d\n", dentry -> ftype);
+ 	printf("inode: %d\n", dentry -> inode);*/
+
+	printf("read data: %d\n", read_data(13,0,buf, 5));
+ 	printf("buf: %s\n", buf);
+ }
+
  /* filesystem system calls */
-
- int32_t fs_halt (uint8_t status){
- 	return -1;
- }
-
- int32_t fs_execute (const uint8_t* command){
- 	return -1;
- }
-
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	return -1;
  }
@@ -140,20 +155,4 @@ static int32_t valid_inode(int32_t inode){
 
  int32_t fs_close (int32_t fd){ 
  	return 0; 
- }
-
- int32_t fs_getargs (uint8_t* buf, int32_t nbytes){
- 	return -1;
- }
-
- int32_t fs_vidmap (uint8_t** screen_start){
- 	return -1;
- }
-
- int32_t fs_set_handler (int32_t signum, void* handler_address){
- 	return -1;
- }
-
- int32_t fs_sigreturn (void){
- 	return -1;
  }
