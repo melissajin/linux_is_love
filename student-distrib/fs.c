@@ -5,7 +5,7 @@ static bootblock_t* bootblock;
  
  /* Initialize filesystem */
  void fs_init(module_t *mem_mod){
-	bootblock =  (bootblock_t*)mem_mod->mod_start;
+	bootblock = (bootblock_t*)mem_mod->mod_start;
  }
 
 /* read_dentry_by_name
@@ -23,7 +23,7 @@ static bootblock_t* bootblock;
 	curr_dentry = &(bootblock->dentry[0]);
 
  	for(i = 0; i < bootblock->dir_entries_cnt; i++){	
- 		printf("fname: %s\n", curr_dentry -> fname);
+ 		//printf("fname: %s\n", curr_dentry -> fname);
  		if(strlen((int8_t*)fname) == strlen((int8_t *) curr_dentry->fname)){
  			if(!strncmp((int8_t *) fname, (int8_t *) curr_dentry->fname, strlen((int8_t*)fname))){
  				for(j = 0; j < strlen((int8_t*)fname); j++){
@@ -85,30 +85,32 @@ static bootblock_t* bootblock;
  	int32_t new_offset; // offset once inside correct data block
  	inode_t* curr_inode;
  	bytes_read = 0;
+	
 
+	//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
+ 	// calculate correct data block and offset to start copying from
+	new_offset = offset % CHARS_PER_BLOCK;
+	off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
+	curr_inode = (inode_t*) bootblock;
+	curr_inode += (1+inode);
+	
+	curr_data_block = (data_block_t*) (bootblock);
+	curr_data_block += (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block]);
+	//printf("data addr: %x\n", curr_data_block);
  	if(inode > 0 && inode < bootblock->inode_cnt){
- 		// use pointer arithmatic to calculate address of desired inode
- 		curr_inode = (inode_t*) ((&bootblock) + (1 + inode)*BLOCK_SIZE);
- 		printf("length: %d\n", curr_inode->length);
- 		//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
- 		// calculate correct data block and offset to start copying from
- 		new_offset = offset % CHARS_PER_BLOCK;
- 		off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
- 		curr_data_block = (data_block_t*) (&(bootblock) + (1 + bootblock->inode_cnt + off_data_block)*BLOCK_SIZE);
-
  		// copy data to buf
  		for(i = 0; i < length; i++){
- 				//check for EOF
+ 			//check for EOF
  			if(bytes_read + offset < curr_inode->length){
- 				buf[i] = curr_data_block->data[new_offset++];
+ 				buf[i] = curr_data_block->data[new_offset];
  				bytes_read++;
+ 				new_offset++;
 				// move to next data block
  				if(new_offset >= CHARS_PER_BLOCK){ 
  					curr_data_block++;
  					new_offset = 0;
  				}
  			}
-
  		}
  	}
  	return bytes_read;
@@ -116,27 +118,27 @@ static bootblock_t* bootblock;
 
  void fs_tests(){
  	clear();
- 	//dentry_t* dentry;
- 	//dentry_t* dentry2;
- 	uint8_t* buf;
+ 	//dentry_t dentry;
+ 	//dentry_t dentry2;
+ 	uint8_t buf[174];
  	//uint8_t name[10] = "frame1.txt";
 
 	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
 	printf("num inodes: %d\n", bootblock->inode_cnt);
 	printf("num data blocks: %d\n", bootblock->data_block_cnt);
 
- 	printf("read by index: %d\n", read_dentry_by_index(1, dentry));
- 	printf("fname: %s\n", dentry -> fname);
- 	printf("ftype: %d\n", dentry -> ftype);
- 	printf("inode: %d\n", dentry -> inode);*/
+ 	printf("read by index: %d\n", read_dentry_by_index(1, &dentry));
+ 	printf("fname: %s\n", dentry.fname);
+ 	printf("ftype: %d\n", dentry.ftype);
+ 	printf("inode: %d\n", dentry.inode);
 
  	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
- 	/*printf("read by name: %d\n", read_dentry_by_name("frame1.txt", dentry));
- 	printf("fname: %s\n", dentry -> fname);
- 	printf("ftype: %d\n", dentry -> ftype);
- 	printf("inode: %d\n", dentry -> inode);*/
+ 	printf("read by name: %d\n", read_dentry_by_name("frame1.txt", &dentry2));
+ 	printf("fname: %s\n", dentry2.fname);
+ 	printf("ftype: %d\n", dentry2.ftype);
+ 	printf("inode: %d\n", dentry2.inode);*/
 
-	printf("read data: %d\n", read_data(13,0,buf, 5));
+	printf("read data: %d\n", read_data(13,0,&buf, 177));
  	printf("buf: %s\n", buf);
  }
 
