@@ -99,7 +99,7 @@ static uint16_t kybd_keys [] = {
 };
 
 /* Line buffer as well as the current size of it */
-uint8_t line_buf[LINE_BUF_MAX];
+int8_t line_buf[LINE_BUF_MAX];
 uint16_t buf_count = 0;
 
 /* determine if the key is pressed */
