@@ -176,15 +176,6 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	// fs_tests();
-
-	// int n = 3;
-	// int8_t buf1[n], buf2[n];
-	// terminal_read(0, buf1, n);
-	// terminal_read(0, buf2, n);
-	// terminal_write(0, buf1, n);
-	// terminal_write(0, buf2, n);
-
 	test();
 
 	/* Execute the first program (`shell') ... */

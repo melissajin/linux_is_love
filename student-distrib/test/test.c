@@ -63,16 +63,15 @@ void test_term_read() {
 
 	terminal_write(0, "You typed: ", 11);
 	terminal_write(0, buf1, 5);
-	printf("\n");
+	terminal_write(0, "\n", 1);
 
 	printf("Please type 9 characters and hit enter twice:\n");
 	terminal_read(0, buf1, 5);
 	terminal_read(0, buf2, 5);
 
-	terminal_write(0, "First 5-byte read: ", 19);
+	printf("First 5-byte read: ");
 	terminal_write(0, buf1, 5);
-	printf("\n");
-	terminal_write(0, "Second 5-byte read: ", 20);
+	printf("\nSecond 5-byte read: ");
 	terminal_write(0, buf2, 5);
 }
 
@@ -174,5 +173,5 @@ void exec_print(char * s, void (*test_fn)()) {
 void wait() {
 	char buf[1];
 	printf("\nPress enter to continue...\n");
-	terminal_read(0, buf, 0);
+	terminal_read(0, buf, 1);
 }

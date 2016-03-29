@@ -8,6 +8,10 @@
 #define NUM_ROWS 25
 #define ATTRIB 0x7
 
+#define VGA_BASE 0x3D4
+#define CURSOR_LOW 0x0F
+#define CURSOR_HIGH 0x0E
+
 static int screen_x;
 static int screen_y;
 static char* video_mem = (char *)VIDEO;
@@ -37,12 +41,12 @@ move_cursor(void){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
 	unsigned short position=(screen_y*NUM_COLS) + screen_x;
 
-  // cursor LOW port to vga INDEX register
-	outb(0x0F, 0x3D4);
-	outb((unsigned char)(position&0xFF), 0x3D5);
-  // cursor HIGH port to vga INDEX register
-  outb(0x0E, 0x3D4);
-	outb((unsigned char)((position>>8)&0xFF), 0x3D5);
+    // cursor LOW port to vga INDEX register
+	outb(CURSOR_LOW, VGA_BASE);
+	outb((unsigned char)(position & 0xFF), VGA_BASE + 1);
+    // cursor HIGH port to vga INDEX register
+    outb(CURSOR_HIGH, VGA_BASE);
+	outb((unsigned char)((position>>8) & 0xFF), VGA_BASE + 1);
 }
 
 void

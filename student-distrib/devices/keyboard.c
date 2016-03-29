@@ -257,7 +257,6 @@ void keyboard_handler_main(){
 					else if(shift && !ctrl && !alt) {
 						switch(key_out) {
 							case '0': key_out = KEY_RIGHTPARENTHESIS;
-							terminal_write(32, line_buf, 100);
 								break;
 							case '1': key_out = KEY_EXCLAMATION;
 								break;
