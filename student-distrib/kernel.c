@@ -12,6 +12,7 @@
 #include "virtualmem.h"
 #include "isr.h"
 #include "fs.h"
+#include "test/test.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -175,36 +176,16 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	int rate;
-	rtc_open(0);
-	clear();
-	int i;
-	for(i = 0; i < 10; i++) {
-		printf("%d\n", i);
-		rtc_read(0, NULL, 0);
-	}
-	rate = 256;
-	rtc_write(0, &rate, 0);
+	// fs_tests();
 
-	for(i = 0; i < 512; i++) {
-		rtc_read(0, NULL, 0);
-	}
-	rtc_close(0);
+	// int n = 3;
+	// int8_t buf1[n], buf2[n];
+	// terminal_read(0, buf1, n);
+	// terminal_read(0, buf2, n);
+	// terminal_write(0, buf1, n);
+	// terminal_write(0, buf2, n);
 
-	fs_tests();
-
-	int n = 3;
-	int8_t buf1[n], buf2[n];
-	terminal_read(0, buf1, n);
-	terminal_read(0, buf2, n);
-	terminal_write(0, buf1, n);
-	terminal_write(0, buf2, n);
-
-	//asm volatile("int $0x80");
-
-	/* test paging */
-	//char * a = (char *) 0x800000;
-	//*a = 'a';
+	test();
 
 	/* Execute the first program (`shell') ... */
 
