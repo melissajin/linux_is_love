@@ -13,6 +13,7 @@
 #define KEYBOARD_DISABLE  0xAD
 #define KEYBOARD_IRQ_NUM  0x01
 #define MASK_KEY_PRESS    0x80
+#define MAX_SCANCODE      0x3A
 #define LINE_BUF_MAX      128
 #define NULL_CHAR         '\0'
 // Scancode for keyboard keys

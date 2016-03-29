@@ -109,6 +109,8 @@ static int r_shift_key = 0;
 static int l_shift_key = 0;
 static int r_ctrl_key = 0;
 static int l_ctrl_key = 0;
+static int r_alt_key = 0;
+static int l_alt_key = 0;
 static int hit_enter = 0;
 /* determine if the key is on */
 static int caps_lock = 0;
@@ -163,7 +165,7 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 		return -1;
 
 	for(i = 0; i < nbytes; i++){
-		putc((int8_t *) buf[i]);
+		putc(((int8_t *) buf)[i]);
 	}
 	return 0;
 }
@@ -221,138 +223,121 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_LSHIFT) l_shift_key = 0;
 			else if(key_out == KEY_LCTRL) r_ctrl_key = 0;
 			else if(key_out == KEY_RCTRL) l_ctrl_key = 0;
+			else if(key_out == KEY_LALT) l_alt_key = 0;
+			else if(key_out == KEY_RALT) r_alt_key = 0;
 		}
 		/* If key not released, print to screen */
 		else if(!(scancode & MASK_KEY_PRESS)){ //0x80 is a flag for key release check
 			key_out = kybd_keys[scancode];
+			int shift = l_shift_key | r_shift_key;
+			int alt = l_alt_key | r_alt_key;
+			int ctrl = l_ctrl_key | r_ctrl_key;
 			if(key_out == KEY_CAPSLOCK) caps_lock = !caps_lock;
 			else if(key_out == KEY_RSHIFT) r_shift_key = 1;
 			else if(key_out == KEY_LSHIFT) l_shift_key = 1;
 			else if(key_out == KEY_LCTRL) r_ctrl_key = 1;
 			else if(key_out == KEY_RCTRL) l_ctrl_key = 1;
+			else if(key_out == KEY_LALT) l_alt_key = 1;
+			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
-				if((caps_lock == 1 || r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) &&
-				   (key_out >= 'a' && key_out <= 'z')){
+				if(scancode > MAX_SCANCODE){}//If not valid scancode do nothing
+				else if((caps_lock || shift) && (!alt && !ctrl)
+						&& (key_out >= 'a' && key_out <= 'z')){
 					key_out -= 'a' - 'A';  /* offset for capital chars */
 					update(key_out);
 					}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '0'){
+				else if(shift && !ctrl && !alt && key_out == '0'){
 				key_out = KEY_RIGHTPARENTHESIS;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '1'){
+				else if(shift && !ctrl && !alt && key_out == '1'){
 				key_out = KEY_EXCLAMATION;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '2'){
+				else if(shift && !ctrl && !alt && key_out == '2'){
 				key_out = KEY_AT;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '3'){
+				else if(shift && !ctrl && !alt && key_out == '3'){
 				key_out = KEY_HASH;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '4'){
+				else if(shift && !ctrl && !alt && key_out == '4'){
 				key_out = KEY_DOLLAR;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '5'){
+				else if(shift && !ctrl && !alt && key_out == '5'){
 				key_out = KEY_PERCENT;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '6'){
+				else if(shift && !ctrl && !alt && key_out == '6'){
 				key_out = KEY_CARRET;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '7'){
+				else if(shift && !ctrl && !alt && key_out == '7'){
 				key_out = KEY_AMPERSAND;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '8'){
+				else if(shift && !ctrl && !alt && key_out == '8'){
 				key_out = KEY_ASTERISK;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == '9'){
+				else if(shift && !ctrl && !alt && key_out == '9'){
 				key_out = KEY_LEFTPARENTHESIS;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_COMMA){
+				else if(shift && !ctrl && !alt && key_out == KEY_COMMA){
 				key_out = KEY_LESS;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_DOT){
+				else if(shift && !ctrl && !alt && key_out == KEY_DOT){
 				key_out = KEY_GREATER;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_SLASH){
+				else if(shift && !ctrl && !alt && key_out == KEY_SLASH){
 				key_out = KEY_QUESTION;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_SEMICOLON){
+				else if(shift && !ctrl && !alt && key_out == KEY_SEMICOLON){
 				key_out = KEY_COLON;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_QUOTE){
+				else if(shift && !ctrl && !alt && key_out == KEY_QUOTE){
 				key_out = KEY_QUOTEDOUBLE;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_LEFTBRACKET){
+				else if(shift && !ctrl && !alt && key_out == KEY_LEFTBRACKET){
 				key_out = KEY_LEFTCURL;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_RIGHTBRACKET){
+				else if(shift && !ctrl && !alt && key_out == KEY_RIGHTBRACKET){
 				key_out = KEY_RIGHTCURL;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_GRAVE){
+				else if(shift && !ctrl && !alt && key_out == KEY_GRAVE){
 				key_out = KEY_TILDE;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_MINUS){
+				else if(shift && !ctrl && !alt && key_out == KEY_MINUS){
 				key_out = KEY_UNDERSCORE;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_EQUAL){
+				else if(shift && !ctrl && !alt && key_out == KEY_EQUAL){
 				key_out = KEY_PLUS;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_BACKSLASH){
+				else if(shift && !ctrl && !alt && key_out == KEY_BACKSLASH){
 				key_out = KEY_BAR;
 				update(key_out);
 				}
-				else if((r_shift_key == 1 || l_shift_key == 1) &&
-				     (r_ctrl_key == 0 && l_ctrl_key == 0) && key_out == KEY_BACKSLASH){
+				else if(shift && !ctrl && !alt && key_out == KEY_BACKSLASH){
 				key_out = KEY_BAR;
 				update(key_out);
 				}
-				else if(r_ctrl_key == 0 && l_ctrl_key == 0 &&
-								l_shift_key == 0 && r_shift_key == 0){
+				else if(!shift && !alt && !ctrl){
 					update(key_out);
 				}
-				else if((r_shift_key == 0 && l_shift_key == 0) &&
-				     (r_ctrl_key == 1 || l_ctrl_key == 1) && key_out == 'l') {
+				else if(!shift && ctrl && key_out == 'l') {
 							 clear();
 							 puts(line_buf);
 				}
