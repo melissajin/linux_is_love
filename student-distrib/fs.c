@@ -81,8 +81,10 @@ static bootblock_t* bootblock;
 	// reading directory entrieds
 	if(inode == 0){
 		buf_dir_max = read_directory(buf_dir);
-		while(bytes_read < length && bytes_read < buf_dir_max){
-			buf[bytes_read++] = buf_dir[offset++];
+		printf("max_dir:%d\n", buf_dir_max);
+		i = offset;
+		while(bytes_read < length && bytes_read < buf_dir_max && (offset + bytes_read) < buf_dir_max){
+			buf[bytes_read++] = buf_dir[i++];
 		}
 	}
 	
@@ -185,7 +187,8 @@ void fs_tests(){
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
-	buf_len = read_data(0,5,buf,10);
+	buf_len = read_data(0,100,buf,500);
+	printf("%d\n", buf_len);
  	for(i=0; i< buf_len; i++){
 		putc(buf[i]);
 	}
