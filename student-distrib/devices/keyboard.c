@@ -241,106 +241,62 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
 				if(scancode > MAX_SCANCODE){}//If not valid scancode do nothing
-				else if((caps_lock || shift) && (!alt && !ctrl)
-						&& (key_out >= 'a' && key_out <= 'z')){
-					key_out -= 'a' - 'A';  /* offset for capital chars */
-					update(key_out);
-					}
-				else if(shift && !ctrl && !alt && key_out == '0'){
-				key_out = KEY_RIGHTPARENTHESIS;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '1'){
-				key_out = KEY_EXCLAMATION;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '2'){
-				key_out = KEY_AT;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '3'){
-				key_out = KEY_HASH;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '4'){
-				key_out = KEY_DOLLAR;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '5'){
-				key_out = KEY_PERCENT;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '6'){
-				key_out = KEY_CARRET;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '7'){
-				key_out = KEY_AMPERSAND;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '8'){
-				key_out = KEY_ASTERISK;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == '9'){
-				key_out = KEY_LEFTPARENTHESIS;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_COMMA){
-				key_out = KEY_LESS;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_DOT){
-				key_out = KEY_GREATER;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_SLASH){
-				key_out = KEY_QUESTION;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_SEMICOLON){
-				key_out = KEY_COLON;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_QUOTE){
-				key_out = KEY_QUOTEDOUBLE;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_LEFTBRACKET){
-				key_out = KEY_LEFTCURL;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_RIGHTBRACKET){
-				key_out = KEY_RIGHTCURL;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_GRAVE){
-				key_out = KEY_TILDE;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_MINUS){
-				key_out = KEY_UNDERSCORE;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_EQUAL){
-				key_out = KEY_PLUS;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_BACKSLASH){
-				key_out = KEY_BAR;
-				update(key_out);
-				}
-				else if(shift && !ctrl && !alt && key_out == KEY_BACKSLASH){
-				key_out = KEY_BAR;
-				update(key_out);
-				}
-				else if(!shift && !alt && !ctrl){
-					update(key_out);
-				}
 				else if(!shift && ctrl && key_out == 'l') {
 							 clear();
 							 puts(line_buf);
 				}
+				else{
+					if((caps_lock || shift) && (!alt && !ctrl)
+							&& (key_out >= 'a' && key_out <= 'z'))
+						key_out -= 'a' - 'A';  /* offset for capital chars */
+					else if(shift && !ctrl && !alt) {
+						switch(key_out) {
+							case '0': key_out = KEY_RIGHTPARENTHESIS;
+								break;
+							case '1': key_out = KEY_EXCLAMATION;
+								break;
+							case '2': key_out = KEY_AT;
+								break;
+							case '3': key_out = KEY_HASH;
+								break;
+							case '4': key_out = KEY_DOLLAR;
+								break;
+							case '5': key_out = KEY_PERCENT;
+								break;
+							case '6': key_out = KEY_CARRET;
+								break;
+							case '7': key_out = KEY_AMPERSAND;
+								break;
+							case '8': key_out = KEY_ASTERISK;
+								break;
+							case '9': key_out = KEY_LEFTPARENTHESIS;
+								break;
+							case KEY_COMMA: key_out = KEY_LESS;
+								break;
+							case KEY_DOT: key_out = KEY_GREATER;
+								break;
+							case KEY_SLASH: key_out = KEY_QUESTION;
+								break;
+							case KEY_SEMICOLON: key_out = KEY_COLON;
+								break;
+							case KEY_QUOTE: key_out = KEY_QUOTEDOUBLE;
+								break;
+							case KEY_LEFTBRACKET: key_out = KEY_LEFTCURL;
+								break;
+							case KEY_RIGHTBRACKET: key_out = KEY_RIGHTCURL;
+								break;
+							case KEY_GRAVE: key_out = KEY_TILDE;
+								break;
+							case KEY_MINUS: key_out = KEY_UNDERSCORE;
+								break;
+							case KEY_EQUAL: key_out = KEY_PLUS;
+								break;
+							case KEY_BACKSLASH: key_out = KEY_BAR;
+								break;
+						}
+					}
+					update(key_out);
+			  }
 			}
 		}
 	}
