@@ -18,19 +18,15 @@ static bootblock_t* bootblock;
  * 					file type, and inode number
  */
  int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry){
- 	int32_t i, j;
+	int i;
  	dentry_t* curr_dentry; //iterate through dentries
 	curr_dentry = &(bootblock->dentry[0]);
 
  	for(i = 0; i < bootblock->dir_entries_cnt; i++){	
- 		//printf("fname: %s\n", curr_dentry -> fname);
- 		if(strlen((int8_t*)fname) == strlen((int8_t *) curr_dentry->fname)){
- 			if(!strncmp((int8_t *) fname, (int8_t *) curr_dentry->fname, strlen((int8_t*)fname))){
- 				for(j = 0; j < strlen((int8_t*)fname); j++){
- 					dentry -> fname[j] = curr_dentry -> fname[j];
- 				}
- 				dentry -> ftype = curr_dentry -> ftype;
- 				dentry -> inode = curr_dentry -> inode;
+ 		if((strlen((int8_t*)fname) == strlen((int8_t *) curr_dentry->fname) || strlen((int8_t*)fname) >= FNAME_LEN)){
+			//we !strcmp because strcmp returns 0 on a match
+ 			if(!strncmp((int8_t *) fname, (int8_t *) curr_dentry->fname, strlen((int8_t*)curr_dentry->fname))){ 
+				memcpy(dentry, curr_dentry, BYTES_DENTRY);
  				return 0;
  			}
  		}
@@ -49,17 +45,11 @@ static bootblock_t* bootblock;
  * 					file type, and inode number
  */ 
  int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry){
- 	int32_t i;
  	dentry_t* curr_dentry; //iterate through dentries
- 	
 
- 	if(index > 0 && index < bootblock->dir_entries_cnt){
+ 	if(index >= 0 && index < bootblock->dir_entries_cnt){
  		curr_dentry = &(bootblock->dentry[index]);
- 		for(i = 0; i < FNAME_LEN; i++){
- 			dentry -> fname[i] = curr_dentry -> fname[i];
- 		}
- 		dentry -> ftype = curr_dentry -> ftype;
- 		dentry -> inode = curr_dentry -> inode;
+		memcpy(dentry, curr_dentry, BYTES_DENTRY);
  		return 0;
  	}
  	return -1;
@@ -83,20 +73,18 @@ static bootblock_t* bootblock;
  	data_block_t* curr_data_block; // data to copy to buf
  	int32_t off_data_block; // data block number in inode
  	int32_t new_offset; // offset once inside correct data block
- 	inode_t* curr_inode;
+ 	inode_t *curr_inode;
  	bytes_read = 0;
 	
+ 	if(inode > 0 && inode < bootblock->inode_cnt){
 
 	//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
-	off_data_block = (offset - new_offset) / CHARS_PER_BLOCK;
+	off_data_block = offset / CHARS_PER_BLOCK;
 	curr_inode = (inode_t*)((uint8_t*) bootblock + ((inode+1) * BLOCK_SIZE));
-	
-	curr_data_block = (data_block_t*) (bootblock);
-	curr_data_block += (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block]);
+	curr_data_block = (data_block_t*) ((uint8_t*) bootblock + (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block])*BLOCK_SIZE);
 	//printf("data addr: %x\n", curr_data_block);
- 	if(inode > 0 && inode < bootblock->inode_cnt){
  		// copy data to buf
  		for(i = 0; i < length; i++){
  			//check for EOF
@@ -106,7 +94,8 @@ static bootblock_t* bootblock;
  				new_offset++;
 				// move to next data block
  				if(new_offset >= CHARS_PER_BLOCK){ 
- 					curr_data_block++;
+					off_data_block++;
+					curr_data_block = (data_block_t*) ((uint8_t*) bootblock + (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block])*BLOCK_SIZE);
  					new_offset = 0;
  				}
  			}
@@ -117,28 +106,65 @@ static bootblock_t* bootblock;
 
  void fs_tests(){
  	clear();
- 	dentry_t dentry;
+ 	/*dentry_t dentry;
  	dentry_t dentry2;
- 	uint8_t buf[174];
- 	//uint8_t name[10] = "frame1.txt";
+	dentry_t dentry3;
+	dentry_t dentry4;
+	dentry_t dentry5;
+	dentry_t dentry6;*/
+ 	uint8_t buf[10000];
+	uint32_t i;
+	uint32_t buf_len;
 
-	printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
+	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
 	printf("num inodes: %d\n", bootblock->inode_cnt);
-	printf("num data blocks: %d\n", bootblock->data_block_cnt);
+	printf("num data blocks: %d\n", bootblock->data_block_cnt);*/
 
- 	printf("read by index: %d\n", read_dentry_by_index(1, &dentry));
+ 	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
+ 	/*printf("read by name: %d\n", read_dentry_by_name("",&dentry));
  	printf("fname: %s\n", dentry.fname);
  	printf("ftype: %d\n", dentry.ftype);
  	printf("inode: %d\n", dentry.inode);
 
- 	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
- 	printf("read by name: %d\n", read_dentry_by_name("frame1.txt", &dentry2));
+ 	printf("read by name: %d\n", read_dentry_by_name("..", &dentry2));
  	printf("fname: %s\n", dentry2.fname);
  	printf("ftype: %d\n", dentry2.ftype);
  	printf("inode: %d\n", dentry2.inode);
 
-	printf("read data: %d\n", read_data(13,0,&buf, 177));
- 	printf("buf: %s\n", buf);
+ 	printf("read by name: %d\n", read_dentry_by_name("verylargetxtwithverylongname.txtasldkjflsa", &dentry3));
+ 	printf("fname: %s\n", dentry3.fname);
+ 	printf("ftype: %d\n", dentry3.ftype);
+ 	printf("inode: %d\n", dentry3.inode);
+
+ 	printf("read by name: %d\n", read_dentry_by_name("counter", &dentry4));
+ 	printf("fname: %s\n", dentry4.fname);
+ 	printf("ftype: %d\n", dentry4.ftype);
+ 	printf("inode: %d\n", dentry4.inode);
+
+ 	printf("read by name: %d\n", read_dentry_by_name("cat", &dentry5));
+ 	printf("fname: %s\n", dentry5.fname);
+ 	printf("ftype: %d\n", dentry5.ftype);
+ 	printf("inode: %d\n", dentry5.inode);
+
+ 	printf("read by name: %d\n", read_dentry_by_name("pingpong", &dentry6));
+ 	printf("fname: %s\n", dentry6.fname);
+ 	printf("ftype: %d\n", dentry6.ftype);
+ 	printf("inode: %d\n", dentry6.inode);
+	*/
+	
+	buf_len = read_data(12,0,buf,10000);
+ 	for(i=0; i< buf_len; i++){
+		if(i%80 == 0)
+		printf("\n");
+		putc(buf[i]);
+	}
+
+	printf("%d\n", buf_len);
+	
+	/*buf_len = read_data(1,-1,&buf,80);
+ 	for(i=0; i< buf_len; i++){
+		putc(buf[i]);
+	}*/
  }
 
  /* filesystem system calls */
