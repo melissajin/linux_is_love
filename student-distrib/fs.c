@@ -75,9 +75,14 @@ static bootblock_t* bootblock;
  	int32_t new_offset; // offset once inside correct data block
  	inode_t *curr_inode;
  	bytes_read = 0;
+ 	uint8_t buf_dir[512];
 	
 	if(inode == 0){
-		bytes_read = read_directory(offset, buf, length);
+		bytes_read = read_directory(buf_dir, 512);
+		for(i = 0; i < length; i++){
+			buf[i] = buf_dir[i+offset];
+		}
+		bytes_read -= offset;
 	}
 	
  	else if(inode > 0 && inode < bootblock->inode_cnt){
@@ -108,57 +113,43 @@ static bootblock_t* bootblock;
  	return bytes_read;
  }
 
- uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length){
-	uint32_t i, k;
-	uint32_t name_bytes = 0;
-	uint32_t dentry_offset = offset/ 32;
-	uint32_t name_offset = offset%32;
+ /* read_directory
+ *	  DESCRIPTION: copies over 'length' bytes of directory entries into 'buf'
+ *    INPUTS: buf - buffer to be filled by the bytes read from the file
+ 			  length - number of bytes to read
+ *    OUTPUTS: none
+ *    RETURN VALUE: number of bytes read and placed in the buffer
+ *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
+ *					the file
+ */
+ uint32_t read_directory(uint8_t* buf, uint32_t length){
+ 	uint32_t i,k;
+ 	uint32_t buf_idx = 0;
+ 	dentry_t dentry;
 
-	
-	for(k = dentry_offset; k< bootblock->dir_entries_cnt; k++){
-		if(k == dentry_offset){
-			for(i = name_offset; i< 33; i++){
-				if(i < length){
-					if(i == 32){
-						buf[i] = '\n';
-					}
-					else{
-					buf[i] = bootblock->dentry[k].fname[i];
-					name_bytes++;
-					}
-				}
-			}
-		}
-		else{
-			for( i = 0; i< 33; i++){
-				if(i + (k-dentry_offset)*33 - name_offset < length){
-					if (i == 32){
-					buf[i + (k-dentry_offset)*33 - name_offset] = '\n';
-					}
-				 	else{
-					buf[i + (k-dentry_offset)*33 - name_offset] = bootblock->dentry[k].fname[i];
-					name_bytes++;
-					}
-				}
-			}
-		}
-		
-	}
-	
-	
-	
-	return name_bytes;
+ 	for(k = 0; k < bootblock->dir_entries_cnt; k++){
+ 		read_dentry_by_index(k, &dentry);
+ 		for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
+ 			if(buf_idx < length){
+ 				buf[buf_idx++] = dentry.fname[i];
+ 			}
+ 		}
+ 		if(buf_idx < length){
+ 			buf[buf_idx++] = '\n';
+ 		}
+ 	}
+	return buf_idx;
 }
-	
- void fs_tests(){
- 	clear();
+
+void fs_tests(){
+	clear();
  	/*dentry_t dentry;
  	dentry_t dentry2;
 	dentry_t dentry3;
 	dentry_t dentry4;
 	dentry_t dentry5;
 	dentry_t dentry6;*/
- 	uint8_t buf[10000];
+ 	uint8_t buf[528];
 	uint32_t i;
 	uint32_t buf_len;
 
@@ -198,7 +189,7 @@ static bootblock_t* bootblock;
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
-	buf_len = read_data(0,0,&buf,32* bootblock->dir_entries_cnt);
+	buf_len = read_data(0,5,buf,512);
  	for(i=0; i< buf_len; i++){
 		putc(buf[i]);
 	}
