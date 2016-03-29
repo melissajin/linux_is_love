@@ -73,19 +73,11 @@ static bootblock_t* bootblock;
  	data_block_t* curr_data_block; // data to copy to buf
  	int32_t off_data_block; // data block number in inode
  	int32_t new_offset; // offset once inside correct data block
- 	int32_t buf_dir_max;
  	inode_t *curr_inode;
  	bytes_read = 0;
- 	uint8_t buf_dir[MAX_DIR_ENTRY_CHARS];
-
-	// reading directory entrieds
+	
 	if(inode == 0){
-		buf_dir_max = read_directory(buf_dir);
-		printf("max_dir:%d\n", buf_dir_max);
-		i = offset;
-		while(bytes_read < length && bytes_read < buf_dir_max && (offset + bytes_read) < buf_dir_max){
-			buf[bytes_read++] = buf_dir[i++];
-		}
+		bytes_read = read_directory(offset, buf, length);
 	}
 	
  	else if(inode > 0 && inode < bootblock->inode_cnt){
@@ -124,19 +116,31 @@ static bootblock_t* bootblock;
  *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
  *					the file
  */
- uint32_t read_directory(uint8_t* buf){
+ uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length){
  	uint32_t i,k;
  	uint32_t buf_idx = 0;
+	uint32_t buf_off = 0;
+	uint32_t ret_val = 0;
  	dentry_t dentry;
 
  	for(k = 0; k < bootblock->dir_entries_cnt; k++){
  		read_dentry_by_index(k, &dentry);
  		for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
- 			buf[buf_idx++] = dentry.fname[i];
+			if(buf_off>= offset && ret_val < length){
+ 				buf[buf_idx++] = dentry.fname[i]; 
+				ret_val++;
+			}
+			else{
+				buf_off++;
+			}
  		}
- 		buf[buf_idx++] = '\n';
+		if(buf_off>= offset && ret_val<length){
+ 			buf[buf_idx++]= '\n';
+		}
  	}
-	return buf_idx;
+	
+	buf[buf_idx] = '\0';
+	return ret_val;
 }
 
 void fs_tests(){
@@ -187,11 +191,15 @@ void fs_tests(){
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
-	buf_len = read_data(0,100,buf,500);
+	/*buf_len = read_data(0,0,buf,5);
 	printf("%d\n", buf_len);
  	for(i=0; i< buf_len; i++){
 		putc(buf[i]);
-	}
+	}*/
+	
+	buf_len = read_data(0,0,buf,528);
+	puts((int8_t*)buf);
+	
  }
 
  /* filesystem system calls */
