@@ -160,8 +160,8 @@ void fs_tests(){
 	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
 	printf("num inodes: %d\n", bootblock->inode_cnt);
 	printf("num data blocks: %d\n", bootblock->data_block_cnt);*/
-
- 	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
+	
+	//tests for read dentry_by_name
  	/*printf("read by name: %d\n", read_dentry_by_name("",&dentry));
  	printf("fname: %s\n", dentry.fname);
  	printf("ftype: %d\n", dentry.ftype);
