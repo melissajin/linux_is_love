@@ -76,7 +76,11 @@ static bootblock_t* bootblock;
  	inode_t *curr_inode;
  	bytes_read = 0;
 	
- 	if(inode > 0 && inode < bootblock->inode_cnt){
+	if(inode == 0){
+		bytes_read = read_directory(offset, buf, length);
+	}
+	
+ 	else if(inode > 0 && inode < bootblock->inode_cnt){
 
 	//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
  	// calculate correct data block and offset to start copying from
@@ -104,6 +108,48 @@ static bootblock_t* bootblock;
  	return bytes_read;
  }
 
+ uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length){
+	uint32_t i, k;
+	uint32_t name_bytes = 0;
+	uint32_t dentry_offset = offset/ 32;
+	uint32_t name_offset = offset%32;
+
+	
+	for(k = dentry_offset; k< bootblock->dir_entries_cnt; k++){
+		if(k == dentry_offset){
+			for(i = name_offset; i< 33; i++){
+				if(i < length){
+					if(i == 32){
+						buf[i] = '\n';
+					}
+					else{
+					buf[i] = bootblock->dentry[k].fname[i];
+					name_bytes++;
+					}
+				}
+			}
+		}
+		else{
+			for( i = 0; i< 33; i++){
+				if(i + (k-dentry_offset)*33 - name_offset < length){
+					if (i == 32){
+					buf[i + (k-dentry_offset)*33 - name_offset] = '\n';
+					}
+				 	else{
+					buf[i + (k-dentry_offset)*33 - name_offset] = bootblock->dentry[k].fname[i];
+					name_bytes++;
+					}
+				}
+			}
+		}
+		
+	}
+	
+	
+	
+	return name_bytes;
+}
+	
  void fs_tests(){
  	clear();
  	/*dentry_t dentry;
@@ -152,22 +198,14 @@ static bootblock_t* bootblock;
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
-	buf_len = read_data(12,0,buf,10000);
+	buf_len = read_data(0,0,&buf,32* bootblock->dir_entries_cnt);
  	for(i=0; i< buf_len; i++){
-		if(i%80 == 0)
-		printf("\n");
 		putc(buf[i]);
 	}
-
-	printf("%d\n", buf_len);
-	
-	/*buf_len = read_data(1,-1,&buf,80);
- 	for(i=0; i< buf_len; i++){
-		putc(buf[i]);
-	}*/
  }
 
  /* filesystem system calls */
+
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	return -1;
  }
