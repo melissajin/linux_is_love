@@ -163,7 +163,7 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 		return -1;
 
 	for(i = 0; i < nbytes; i++){
-		putc((int8_t) buf[i]);
+		putc((int8_t *) buf[i]);
 	}
 	return 0;
 }
