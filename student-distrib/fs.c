@@ -76,6 +76,7 @@ static bootblock_t* bootblock;
  	inode_t *curr_inode;
  	bytes_read = 0;
 	
+	//if its the directory inode then we just read the directory
 	if(inode == DIRECTORY_INODE){
 		bytes_read = read_directory(offset, buf, length);
 	}
@@ -109,24 +110,25 @@ static bootblock_t* bootblock;
 
  /* read_directory
  *	  DESCRIPTION: copies over 'length' bytes of directory entries into 'buf'
- *    INPUTS: buf - buffer to be filled by the bytes read from the file
- 			  length - number of bytes to read
+ *    INPUTS: 	buf - buffer to be filled by the bytes read from the file
+ 	 	length - number of bytes to read
+		offset = the offset of bytes to ignore
  *    OUTPUTS: none
  *    RETURN VALUE: number of bytes read and placed in the buffer
  *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
  *					the file
  */
  uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length){
- 	uint32_t i,k;
- 	uint32_t buf_idx = 0;
-	uint32_t buf_off = 0;
-	uint32_t ret_val = 0;
+ 	uint32_t i,k; 	      //iterators
+ 	uint32_t buf_idx = 0; //where in the buffer
+	uint32_t buf_off = 0; //a variable to keep track if  buffer has gone past the offset
+	uint32_t ret_val = 0; //our return value (amount of bytes read)
  	dentry_t dentry;
 
- 	for(k = 0; k < bootblock->dir_entries_cnt; k++){
- 		read_dentry_by_index(k, &dentry);
- 		for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
-			if(buf_off>= offset && ret_val < length){
+ 	for(k = 0; k < bootblock->dir_entries_cnt; k++){ //iterate and get each dentry
+ 		read_dentry_by_index(k, &dentry); 
+ 		for(i = 0; i < strlen((int8_t*)dentry.fname); i++){ //we start iterating through the names only copy if weve gone past the offset
+			if(buf_off>= offset && ret_val < length){ 
  				buf[buf_idx++] = dentry.fname[i]; 
 				ret_val++;
 			}
@@ -139,7 +141,7 @@ static bootblock_t* bootblock;
 		}
  	}
 	
-	buf[buf_idx] = '\0';
+	buf[buf_idx] = '\0'; //end of file so we can print as string
 	return ret_val;
 }
 
