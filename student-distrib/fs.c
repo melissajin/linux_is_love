@@ -143,69 +143,6 @@ static bootblock_t* bootblock;
 	return ret_val;
 }
 
-void fs_tests(){
-	clear();
- 	/*dentry_t dentry;
- 	dentry_t dentry2;
-	dentry_t dentry3;
-	dentry_t dentry4;
-	dentry_t dentry5;
-	dentry_t dentry6;*/
- 	uint8_t buf[528];
-	//uint32_t i;
-	uint32_t buf_len;
-
-	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
-	printf("num inodes: %d\n", bootblock->inode_cnt);
-	printf("num data blocks: %d\n", bootblock->data_block_cnt);*/
-
- 	// WARNING: THIS NEXT LINE GENERATES A COMPILATION ERROR
- 	/*printf("read by name: %d\n", read_dentry_by_name("",&dentry));
- 	printf("fname: %s\n", dentry.fname);
- 	printf("ftype: %d\n", dentry.ftype);
- 	printf("inode: %d\n", dentry.inode);
-
- 	printf("read by name: %d\n", read_dentry_by_name("..", &dentry2));
- 	printf("fname: %s\n", dentry2.fname);
- 	printf("ftype: %d\n", dentry2.ftype);
- 	printf("inode: %d\n", dentry2.inode);
-
- 	printf("read by name: %d\n", read_dentry_by_name("verylargetxtwithverylongname.txtasldkjflsa", &dentry3));
- 	printf("fname: %s\n", dentry3.fname);
- 	printf("ftype: %d\n", dentry3.ftype);
- 	printf("inode: %d\n", dentry3.inode);
-
- 	printf("read by name: %d\n", read_dentry_by_name("counter", &dentry4));
- 	printf("fname: %s\n", dentry4.fname);
- 	printf("ftype: %d\n", dentry4.ftype);
- 	printf("inode: %d\n", dentry4.inode);
-
- 	printf("read by name: %d\n", read_dentry_by_name("cat", &dentry5));
- 	printf("fname: %s\n", dentry5.fname);
- 	printf("ftype: %d\n", dentry5.ftype);
- 	printf("inode: %d\n", dentry5.inode);
-
- 	printf("read by name: %d\n", read_dentry_by_name("pingpong", &dentry6));
- 	printf("fname: %s\n", dentry6.fname);
- 	printf("ftype: %d\n", dentry6.ftype);
- 	printf("inode: %d\n", dentry6.inode);
-	*/
-	
-	//TESTING FOR READ DATA DO NOT SET INODE TO 0
-	/*buf_len = read_data(0,0,buf,5);
-	printf("%d\n", buf_len);
- 	for(i=0; i< buf_len; i++){
-		putc(buf[i]);
-	}*/
-	
-	//TESTING FOR READ DIRECTORY
-	buf_len = read_data(DIRECTORY_INODE ,0,buf,528);
-	puts((int8_t*)buf);
-	
- }
-
- /* filesystem system calls */
-
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	return -1;
  }
