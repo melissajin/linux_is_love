@@ -172,20 +172,21 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	rtc_open();
-	rtc_write(2);
+	int rate;
+	rtc_open(0);
 	clear();
 	int i;
 	for(i = 0; i < 10; i++) {
 		printf("%d\n", i);
-		rtc_read();
+		rtc_read(0, NULL, 0);
 	}
-	rtc_write(256);
+	rate = 256;
+	rtc_write(0, &rate, 0);
 
 	for(i = 0; i < 512; i++) {
-		rtc_read();
+		rtc_read(0, NULL, 0);
 	}
-	rtc_close();
+	rtc_close(0);
 
 	/* Execute the first program (`shell') ... */
 
