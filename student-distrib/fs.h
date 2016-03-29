@@ -16,6 +16,7 @@
  #define FNAME_LEN 32
  #define BYTES_DENTRY 64
  #define MAX_DIR_ENTRY_CHARS (16*33)
+ #define DIRECTORY_INODE 0
 
  typedef struct dentry {
  	int8_t fname[FNAME_LEN];

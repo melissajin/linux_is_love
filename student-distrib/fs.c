@@ -76,11 +76,11 @@ static bootblock_t* bootblock;
  	inode_t *curr_inode;
  	bytes_read = 0;
 	
-	if(inode == 0){
+	if(inode == DIRECTORY_INODE){
 		bytes_read = read_directory(offset, buf, length);
 	}
 	
- 	else if(inode > 0 && inode < bootblock->inode_cnt){
+ 	else if(inode > DIRECTORY_INODE  && inode < bootblock->inode_cnt){
 
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
@@ -152,7 +152,7 @@ void fs_tests(){
 	dentry_t dentry5;
 	dentry_t dentry6;*/
  	uint8_t buf[528];
-	uint32_t i;
+	//uint32_t i;
 	uint32_t buf_len;
 
 	/*printf("num dir entries: %d\n", bootblock->dir_entries_cnt);
@@ -198,8 +198,8 @@ void fs_tests(){
 		putc(buf[i]);
 	}*/
 	
-	//TESTING FOR READ DIRECTORY, SET INODE TO 0
-	buf_len = read_data(0,0,buf,528);
+	//TESTING FOR READ DIRECTORY
+	buf_len = read_data(DIRECTORY_INODE ,0,buf,528);
 	puts((int8_t*)buf);
 	
  }
