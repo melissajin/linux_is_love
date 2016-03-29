@@ -191,12 +191,14 @@ void fs_tests(){
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
+	//TESTING FOR READ DATA DO NOT SET INODE TO 0
 	/*buf_len = read_data(0,0,buf,5);
 	printf("%d\n", buf_len);
  	for(i=0; i< buf_len; i++){
 		putc(buf[i]);
 	}*/
 	
+	//TESTING FOR READ DIRECTORY, SET INODE TO 0
 	buf_len = read_data(0,0,buf,528);
 	puts((int8_t*)buf);
 	
