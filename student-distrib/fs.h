@@ -15,6 +15,7 @@
  #define CHARS_PER_BLOCK (4096) /* 4kB block */
  #define FNAME_LEN 32
  #define BYTES_DENTRY 64
+ #define MAX_DIR_ENTRY_CHARS (16*33)
 
  typedef struct dentry {
  	int8_t fname[FNAME_LEN];
@@ -55,7 +56,7 @@
  int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry);
 
  /*Lists the directory entries*/
- uint32_t read_directory(uint8_t* buf, uint32_t length);
+ uint32_t read_directory(uint8_t* buf);
 
  /* Reads data in dentry starting from offset */
  int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);

@@ -73,27 +73,27 @@ static bootblock_t* bootblock;
  	data_block_t* curr_data_block; // data to copy to buf
  	int32_t off_data_block; // data block number in inode
  	int32_t new_offset; // offset once inside correct data block
+ 	int32_t buf_dir_max;
  	inode_t *curr_inode;
  	bytes_read = 0;
- 	uint8_t buf_dir[512];
-	
+ 	uint8_t buf_dir[MAX_DIR_ENTRY_CHARS];
+
+	// reading directory entrieds
 	if(inode == 0){
-		bytes_read = read_directory(buf_dir, 512);
-		for(i = 0; i < length; i++){
-			buf[i] = buf_dir[i+offset];
+		buf_dir_max = read_directory(buf_dir);
+		while(bytes_read < length && bytes_read < buf_dir_max){
+			buf[bytes_read++] = buf_dir[offset++];
 		}
-		bytes_read -= offset;
 	}
 	
  	else if(inode > 0 && inode < bootblock->inode_cnt){
 
-	//printf("data blocks: %s\n", (int8_t*)data_blocks[inodes[inode].data_block[0]].data);
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
 	off_data_block = offset / CHARS_PER_BLOCK;
 	curr_inode = (inode_t*)((uint8_t*) bootblock + ((inode+1) * BLOCK_SIZE));
 	curr_data_block = (data_block_t*) ((uint8_t*) bootblock + (1 + bootblock->inode_cnt + curr_inode->data_block[off_data_block])*BLOCK_SIZE);
-	//printf("data addr: %x\n", curr_data_block);
+
  		// copy data to buf
  		for(i = 0; i < length; i++){
  			//check for EOF
@@ -122,7 +122,7 @@ static bootblock_t* bootblock;
  *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
  *					the file
  */
- uint32_t read_directory(uint8_t* buf, uint32_t length){
+ uint32_t read_directory(uint8_t* buf){
  	uint32_t i,k;
  	uint32_t buf_idx = 0;
  	dentry_t dentry;
@@ -130,13 +130,9 @@ static bootblock_t* bootblock;
  	for(k = 0; k < bootblock->dir_entries_cnt; k++){
  		read_dentry_by_index(k, &dentry);
  		for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
- 			if(buf_idx < length){
- 				buf[buf_idx++] = dentry.fname[i];
- 			}
+ 			buf[buf_idx++] = dentry.fname[i];
  		}
- 		if(buf_idx < length){
- 			buf[buf_idx++] = '\n';
- 		}
+ 		buf[buf_idx++] = '\n';
  	}
 	return buf_idx;
 }
@@ -189,7 +185,7 @@ void fs_tests(){
  	printf("inode: %d\n", dentry6.inode);
 	*/
 	
-	buf_len = read_data(0,5,buf,512);
+	buf_len = read_data(0,5,buf,10);
  	for(i=0; i< buf_len; i++){
 		putc(buf[i]);
 	}
