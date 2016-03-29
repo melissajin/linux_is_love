@@ -122,7 +122,7 @@ int32_t terminal_close(int32_t fd){
 }
 
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
-	int diff, i;
+	int diff;
 
 	/* Check for null pointer */
 	if(buf == NULL)
@@ -152,6 +152,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 
 	reading = 0;
 	hit_enter = 0;
+	return 0;
 }
 
 int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
@@ -162,7 +163,7 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 		return -1;
 
 	for(i = 0; i < nbytes; i++){
-		putc(buf[i]);
+		putc((int8_t) buf[i]);
 	}
 	return 0;
 }
