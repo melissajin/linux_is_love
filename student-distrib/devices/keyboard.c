@@ -103,6 +103,7 @@ static int8_t line_buf[LINE_BUF_MAX];
 static uint16_t buf_count = 0;
 
 static int reading = 0;
+static int input_len = 0;
 
 /* determine if the key is pressed */
 static int r_shift_key = 0;
@@ -141,7 +142,8 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	if(nbytes > LINE_BUF_MAX) nbytes = LINE_BUF_MAX;
 
 	/* read nbytes from line buffer */
-	diff = LINE_BUF_MAX - nbytes;
+	diff = buf_count - nbytes;
+	if(diff < 0) diff = 0;
 	memcpy(buf, line_buf, nbytes);
 
 	/* move unread bytes in line buffer to beginning */
@@ -184,24 +186,27 @@ void kybd_init(){
 void update(uint16_t key){
 	if(key == KEY_RETURN){
 		putc(key);
-		line_buf[buf_count] = '\n';
+		line_buf[buf_count++] = '\n';
 		hit_enter = 1;
+		input_len = 0;
 		if(!reading) {
 			memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 			buf_count = 0;
 		}
 	}
 	else if(key == KEY_BACKSPACE){
-		if(buf_count != 0){
+		if(input_len){
 			backspace_fnc();
 			buf_count--;
+			input_len--;
 			line_buf[buf_count] = NULL_CHAR;
 		}
 	}
-	else if(buf_count < LINE_BUF_MAX - 1){
+	else if(buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
 		putc(key);
 		line_buf[buf_count] = key;
 		buf_count++;
+		input_len++;
 	}
 }
 
@@ -246,12 +251,13 @@ void keyboard_handler_main(){
 							 puts(line_buf);
 				}
 				else{
-					if((caps_lock || shift) && (!alt && !ctrl)
+					if((caps_lock ^ shift) && (!alt && !ctrl)
 							&& (key_out >= 'a' && key_out <= 'z'))
 						key_out -= 'a' - 'A';  /* offset for capital chars */
 					else if(shift && !ctrl && !alt) {
 						switch(key_out) {
 							case '0': key_out = KEY_RIGHTPARENTHESIS;
+							terminal_write(32, line_buf, 100);
 								break;
 							case '1': key_out = KEY_EXCLAMATION;
 								break;
