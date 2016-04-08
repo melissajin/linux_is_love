@@ -43,11 +43,16 @@ handle:
 handle_syscall:		#similar functionality as above except for system calls
 	pusha
 	movl	%esp, %eax
-	pushl	%eax
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
 
-	call	fault_handler
+	jmp *sys_table(,%eax, 4)
 
-	popl	%eax
+halt_ret_label: 	#return from systemcall
+	popl	%ebx
+	popl	%ecx
+	popl	%edx
 	popa
 
 	add		$8, %esp
@@ -256,3 +261,38 @@ sys_call:		#preparing argument for handle_syscall
 	cli
 	pushl %eax
 	jmp handle_syscall
+
+sys_halt:
+	jmp halt_ret_label
+
+sys_execute:
+	jmp halt_ret_label
+		
+sys_read:
+	jmp halt_ret_label
+	
+sys_write:
+	jmp halt_ret_label
+	
+sys_open:
+	jmp halt_ret_label
+	
+sys_close:
+	jmp halt_ret_label
+	
+sys_getargs:
+	jmp halt_ret_label
+	
+sys_vidmap:
+	jmp halt_ret_label
+	
+sys_set_handler:
+	jmp halt_ret_label
+	
+sys_sigreturn:
+	jmp halt_ret_label
+	
+sys_table:
+	.long sys_halt, sys_execute, sys_read, sys_write, sys_open, sys_close,
+			sys_getargs, sys_vidmap, sys_set_handler, sys_sigreturn
+.end
