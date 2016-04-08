@@ -21,7 +21,7 @@ static fops_t fs_fops = {
  void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
 
-	add_device(DEV_NAME, &fs_fops);
+	add_device((uint8_t *) DEV_NAME, &fs_fops);
  }
 
 /* read_dentry_by_name
@@ -157,6 +157,44 @@ static fops_t fs_fops = {
 	
 	buf[buf_idx] = '\0';
 	return ret_val;
+}
+
+ /* load
+ *	  DESCRIPTION: loads contents of the file 'fname' into memory at address 'addr'
+ *    INPUTS: fname - filename specifying the file to read from
+ 			  addr - address to copy contents of file to
+ *    OUTPUTS: none
+ *    RETURN VALUE: 0 on success, -1 on failure
+ *    SIDE EFFECTS: copies contents of the specified file into the memoy
+ *					address.
+ */
+// int32_t load(uint32_t inode_idx, uint8_t * mem){
+// 	dentry_t dentry;
+// 	uint32_t len;
+// 	inode_t* curr_inode;
+// 	uint8_t buf[1024];
+
+// 	if(read_dentry_by_index(inode_idx, &dentry) == 0){
+// 		curr_inode = (inode_t*)((uint8_t*) bootblock + ((dentry.inode+1) * BLOCK_SIZE));
+// 		len = curr_inode->length;
+// 		read_data(dentry.inode, 0, buf, len);
+// 		memcpy(mem, buf, len);
+// 		return 0;
+// 	}
+// 	return -1;
+// }
+int32_t load(dentry_t * d, uint8_t * mem) {
+	uint32_t len;
+	inode_t * curr_inode;
+
+	curr_inode = (inode_t*)((uint8_t*) bootblock + ((d -> inode+1) * BLOCK_SIZE));
+	len = curr_inode -> length;
+	read_data(d -> inode, 0, mem, len);
+	return 0;
+}
+
+inode_t * get_inode_ptr(uint32_t inode) {
+	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
 }
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){

@@ -12,6 +12,8 @@
 #include "virtualmem.h"
 #include "isr.h"
 #include "fs.h"
+#include "sys_calls.h"
+#include "process.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -176,6 +178,11 @@ entry (unsigned long magic, unsigned long addr)
 	sti();
 
 	/* Execute the first program (`shell') ... */
+	clear();
+	proc_count = 0;
+	execute((uint8_t *) "shell");
+
+	printf("Shell returned\n");
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");

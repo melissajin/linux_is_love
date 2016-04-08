@@ -45,7 +45,7 @@ void rtc_init() {
     /* Populate IDT entry for rtc */
     set_int_gate(0x28, (unsigned long) rtc_isr);
 
-    add_device(DEV_NAME, &rtc_fops);
+    add_device((uint8_t *) DEV_NAME, &rtc_fops);
 }
 
 void rtc_handler_main() {
@@ -129,7 +129,7 @@ int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes) {
     outb((curr & 0xF0) | rs, RW_CMOS_PORT);
     sti();
 
-    return 0;
+    return 1;
 }
 
 /* close rtc */
