@@ -259,7 +259,6 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 
 sys_call:		#preparing argument for handle_syscall
 	cli
-	pushl %eax
 	jmp handle_syscall
 
 sys_halt:
