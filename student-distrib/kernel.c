@@ -11,6 +11,8 @@
 #include "debug.h"
 #include "virtualmem.h"
 #include "isr.h"
+#include "fs.h"
+#include "test/test.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -153,7 +155,9 @@ entry (unsigned long magic, unsigned long addr)
 
 	/* Initialize devices, memory, filesystem, enable device interrupts on the
 	 * PIC, any other initialization stuff... */
+	fs_init((module_t *)mbi->mods_addr);
 	virtualmem_init();
+	
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
 	kybd_init();
@@ -172,7 +176,7 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	//asm volatile("int $0x80");
+	test();
 
 	/* Execute the first program (`shell') ... */
 
