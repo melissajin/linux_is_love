@@ -73,3 +73,15 @@ void virtualmem_init()
 		: "eax"
 	);
 }
+/* map_large_page
+ * Description: maps a 4MB page to physical memory
+ * Inputs: lower_b - the 4Mb section of physical memory that were trying to map to
+	   virtual_add - the virtual address which gets us to the PDE to map
+ * Outputs: none
+ * Return: None
+ */
+void map_large_page(int32_t virtual_add, int32_t lower_b){
+	lower_b &= PDE_4MB_MASK;
+	pd[virtual_add >> PDE_IDX_OFFS] = lower_b | LARGE_INIT_FLAGS;
+	return;
+}
