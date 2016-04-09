@@ -1,5 +1,4 @@
 #include "virtualmem.h"
-#include "types.h"
 #include "lib.h"
 
 #define TABLE_SIZE 1024
@@ -10,6 +9,7 @@
 #define PDE_IDX_OFFS 22
 #define PTE_IDX_OFFS 12
 #define PTE_IDX_MASK 0x3FF
+#define PDE_4MB_MASK 0xFFC00000
 
 /* flags */
 #define FLAG_P  0x1    /* present */
@@ -23,7 +23,7 @@
 #define FLAG_G  0x100  /* global */
 
 /* initial values */
-#define KERNEL_INIT_FLAGS (FLAG_P | FLAG_WE | FLAG_PS)
+#define LARGE_INIT_FLAGS (FLAG_P | FLAG_WE | FLAG_PS)
 #define PDE_INIT_FLAGS FLAG_WE
 #define PTE_INIT_FLAGS FLAG_WE
 
@@ -54,7 +54,7 @@ void virtualmem_init()
 
 
 	/* initialize 4 MB kernel page */
-	pd[KERNEL_LOC >> PDE_IDX_OFFS] = KERNEL_LOC | KERNEL_INIT_FLAGS;
+	pd[KERNEL_LOC >> PDE_IDX_OFFS] = KERNEL_LOC | LARGE_INIT_FLAGS;
 
 	/* enable PSE for 4 MB pages
 	   0x10 - enable 4th bit of cr4 */
@@ -78,10 +78,12 @@ void virtualmem_init()
 
 /* map_page
  * Description: maps a 4MB page in physical memory
- * Inputs: process_num - process number that gets the page being mapped
+ * Inputs: lower_b
  * Outputs: none
- * Return: 0 on success, -1 on failure
+ * Return: pointer to memory address on success, NULL on failure
  */
-int32_t map_page(int32_t process_num){
-	pd[(PROCESS_LOC + process_num*PROCESS_SIZE) >> PDE_IDX_OFFS] = 
+void map_large_page(int32_t virtual_add, int32_t lower_b){
+	lower_b &= PDE_4MB_MASK;
+	pd[virtual_add >> PDE_IDX_OFFS] = lower_b | LARGE_INIT_FLAGS;
+	return;
 }
