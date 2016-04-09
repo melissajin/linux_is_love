@@ -281,5 +281,13 @@ sys_execute:
 	pushl	$USER_CS
 	
 	iret
+halt_ret_label:
+	ret
+
+sys_halt:
+	call	halt
+	jmp 	halt_ret_label
+	
+	
 
 .end
