@@ -76,11 +76,12 @@ void virtualmem_init()
 	);
 }
 
-/* map_page
- * Description: maps a 4MB page in physical memory
- * Inputs: lower_b
+/* map_large_page
+ * Description: maps a 4MB page to physical memory
+ * Inputs: lower_b - the 4Mb section of physical memory that were trying to map to
+	   virtual_add - the virtual address which gets us to the PDE to map
  * Outputs: none
- * Return: pointer to memory address on success, NULL on failure
+ * Return: None
  */
 void map_large_page(int32_t virtual_add, int32_t lower_b){
 	lower_b &= PDE_4MB_MASK;
