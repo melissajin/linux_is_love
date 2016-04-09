@@ -270,12 +270,15 @@ sys_call:		#preparing argument for handle_syscall
 
 sys_execute:
 	call 	execute
-	pushl 	#user EIP return value
-	pushl	$USER_CS
+	movw 	$USER_DS, %cx 	#setting the ds register to contain user ds
+	movw 	%cx, %ds
+
+	pushl	$USER_DS	#pushing the registers in correct order
+	pushl 	#user ESP return value
 	pushfd	
 	orl	$0x200, (%esp)
-	pushl 	#user ESP return value
-	pushl	$USER_DS
+	pushl 	#user EIP return value
+	pushl	$USER_CS
 	
 	iret
 
