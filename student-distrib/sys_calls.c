@@ -3,6 +3,9 @@
 #include "fs.h"
 #include "virtualmem.c"
 
+#define PROG_VM_START 0x8000000
+#define SPACE_4MB     0x400000
+
 int32_t halt (uint8_t status){ return -1; }
 int32_t execute (const uint8_t* command){ 
     uint8_t* args[1024];
@@ -18,10 +21,17 @@ int32_t execute (const uint8_t* command){
 	if(buf[0] == 0x7f && buf[1] == 0x45 && buf[2] == 0x4c && buf[3] == 0x46){
 
 		uint32_t addr = (uint32_t * buf)[23];
-		map_large_page(/* give address of executable */);
+		map_large_page(PROG_VM_START, PROG_VM_START + /*process number*/ * SPACE_4MB);
 		
 		/* load file in physical memory */
 		load(dentry.inode, (uint32_t *) addr);
+		
+		__asm__ __volatile("
+			"
+			:
+			:"d"(addr), "b"(PROG_VM_START + SPACE_4MB)
+			:
+		)
 	}
 }
 
