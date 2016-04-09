@@ -1,3 +1,6 @@
+#define USER_CS 0x0023
+#define USER_DS 0x002B
+
 .text
 
 .global isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7 //provides all the assembly linkages to be called by c functions
@@ -12,6 +15,7 @@
 .extern keyboard_handler_main	#assembly linkage for keyboard
 .extern rtc_handler_main	#assembly linkage for rtc
 .extern halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn #system calls
+
 
 sys_table:
 	.long halt, sys_execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
@@ -266,18 +270,13 @@ sys_call:		#preparing argument for handle_syscall
 
 sys_execute:
 	call 	execute
-	movw 	0x23, %ax			#push artificial iret instructions
-	movw	%ax, %ds			#we fill all the segment registers with the new data selector
-	movw	%ax, %es
-	movw	%ax, %fs
-	movw	%ax, %gs
-
-	movl	%esp, %eax
-	push 	0x23				#user data segment with bottom 2 bits set for ring 3
-	pushl	%eax				#push our current stack just for the heck of it
-
-	pushf
-	push 	0x1B				#user code segment with bottom 2 bits set for ring 3
+	pushl 	#user EIP return value
+	pushl	$USER_CS
+	pushfd	
+	orl	$0x200, (%esp)
+	pushl 	#user ESP return value
+	pushl	$USER_DS
+	
 	iret
 
 .end
