@@ -1,11 +1,27 @@
-
 #include "fs.h"
+#include "process.h"
+
+#define DEV_NAME "fs"
+
+static int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
+static int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
+static int32_t fs_open (const uint8_t* filename);
+static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
+
+static fops_t fs_fops = {
+	.read = fs_read,
+	.write = fs_write,
+	.open = fs_open,
+	.close = fs_close
+};
  
  /* Initialize filesystem */
  void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
+
+	add_device(DEV_NAME, &fs_fops);
  }
 
 /* read_dentry_by_name

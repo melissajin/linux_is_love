@@ -6,8 +6,17 @@
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
+#include "../fs.h"
+#include "../process.h"
+
+#define DEV_NAME "term"
 
 extern void kybd_isr();
+
+static int32_t terminal_open(const uint8_t* filename);
+static int32_t terminal_close(int32_t fd);
+static int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes);
+static int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes);
 
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
@@ -116,6 +125,13 @@ static int hit_enter = 0;
 /* determine if the key is on */
 static int caps_lock = 0;
 
+fops_t term_fops = {
+	.read = terminal_read,
+	.write = terminal_write,
+	.open = terminal_open,
+	.close = terminal_close
+};
+
 int32_t terminal_open(const uint8_t* filename){
   return 0;
 }
@@ -181,6 +197,8 @@ void kybd_init(){
 
 	/* Set all of the values in the line buffer to the null character */
 	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
+
+	add_device(DEV_NAME, &term_fops);
 }
 
 void update(uint16_t key){
