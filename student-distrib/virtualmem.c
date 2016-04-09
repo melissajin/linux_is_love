@@ -4,6 +4,7 @@
 
 #define TABLE_SIZE 1024
 #define PAGE_SIZE  4096  /* kilobytes */
+#define PROCESS_SIZE 0x400000
 
 /* values for manipulating table entries */
 #define PDE_IDX_OFFS 22
@@ -28,6 +29,7 @@
 
 /* memory locations */
 #define KERNEL_LOC 0x400000
+#define PROCESS_LOC 0x800000
 
 static uint32_t pd[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 static uint32_t pt_first[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
@@ -72,4 +74,14 @@ void virtualmem_init()
 		:
 		: "eax"
 	);
+}
+
+/* map_page
+ * Description: maps a 4MB page in physical memory
+ * Inputs: process_num - process number that gets the page being mapped
+ * Outputs: none
+ * Return: 0 on success, -1 on failure
+ */
+int32_t map_page(int32_t process_num){
+	pd[(PROCESS_LOC + process_num*PROCESS_SIZE) >> PDE_IDX_OFFS] = 
 }
