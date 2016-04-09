@@ -11,6 +11,11 @@
 .extern sys_call_handler	#assembly linkage for sys calls
 .extern keyboard_handler_main	#assembly linkage for keyboard
 .extern rtc_handler_main	#assembly linkage for rtc
+.extern halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn #system calls
+
+sys_table:
+	.long halt, sys_execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
+
 
 handle:
 	pusha
@@ -42,14 +47,12 @@ handle:
 
 handle_syscall:		#similar functionality as above except for system calls
 	pusha
-	movl	%esp, %eax
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
 
-	jmp *sys_table(,%eax, 4)
+	call *sys_table(,%eax, 4)
 
-halt_ret_label: 	#return from systemcall
 	popl	%ebx
 	popl	%ecx
 	popl	%edx
@@ -261,37 +264,20 @@ sys_call:		#preparing argument for handle_syscall
 	cli
 	jmp handle_syscall
 
-sys_halt:
-	jmp halt_ret_label
-
 sys_execute:
-	jmp halt_ret_label
-		
-sys_read:
-	jmp halt_ret_label
-	
-sys_write:
-	jmp halt_ret_label
-	
-sys_open:
-	jmp halt_ret_label
-	
-sys_close:
-	jmp halt_ret_label
-	
-sys_getargs:
-	jmp halt_ret_label
-	
-sys_vidmap:
-	jmp halt_ret_label
-	
-sys_set_handler:
-	jmp halt_ret_label
-	
-sys_sigreturn:
-	jmp halt_ret_label
-	
-sys_table:
-	.long sys_halt, sys_execute, sys_read, sys_write, sys_open, sys_close,
-			sys_getargs, sys_vidmap, sys_set_handler, sys_sigreturn
+	call 	execute
+	movw 	0x23, %ax			#push artificial iret instructions
+	movw	%ax, %ds			#we fill all the segment registers with the new data selector
+	movw	%ax, %es
+	movw	%ax, %fs
+	movw	%ax, %gs
+
+	movl	%esp, %eax
+	push 	0x23				#user data segment with bottom 2 bits set for ring 3
+	pushl	%eax				#push our current stack just for the heck of it
+
+	pushf
+	push 	0x1B				#user code segment with bottom 2 bits set for ring 3
+	iret
+
 .end

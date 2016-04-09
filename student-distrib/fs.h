@@ -60,7 +60,7 @@
  int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
 
  /* Loads an executable file into correct location in memory */
- int32_t load(const uint8_t* fname, uint32_t addr);
+ int32_t load(uint8_t inode, uint32_t* addr);
 
  /* Filesystem system calls */
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);

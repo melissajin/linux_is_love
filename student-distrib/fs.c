@@ -152,25 +152,16 @@ static bootblock_t* bootblock;
  *    SIDE EFFECTS: copies contents of the specified file into the memoy
  *					address.
  */
-int32_t load(const uint8_t* fname, uint32_t addr){
+int32_t load(uint8_t inode, uint8_t * mem){
 	dentry_t dentry;
 	uint32_t len;
 
-	if(read_dentry_by_name(fname, &dentry) == 0){
+	if(read_dentry_by_inode(inode, &dentry) == 0){
 		len = dentry.inode.length
-		uint8_t buf[len];
-		
-		if(read_data(dentry.inode, 0, buf, len) == 0){
-			/* check for executable file */
-			if(buf[1] == 'E' && buf[2] == 'L' && buf[3] == 'F'){
-				memcpy(addr, buf, len);
-				return 0;
-			}
-		}
+		read_data(dentry.inode, 0, mem, len)
+		return 0;
 	}
-	
 	return -1;
-
 }
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
