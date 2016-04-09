@@ -274,10 +274,10 @@ sys_execute:
 	movw 	%cx, %ds
 
 	pushl	$USER_DS	#pushing the registers in correct order
-	pushl 	#user ESP return value
+	pushl 	%ebx
 	pushfd	
 	orl	$0x200, (%esp)
-	pushl 	#user EIP return value
+	pushl 	%edx
 	pushl	$USER_CS
 	
 	iret
