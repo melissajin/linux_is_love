@@ -168,13 +168,15 @@ static fops_t fs_fops = {
  *    SIDE EFFECTS: copies contents of the specified file into the memoy
  *					address.
  */
-int32_t load(uint8_t inode, uint8_t * mem){
+int32_t load(uint32_t inode_idx, uint8_t * mem){
 	dentry_t dentry;
 	uint32_t len;
+	inode_t* curr_inode;
 
-	if(read_dentry_by_inode(inode, &dentry) == 0){
-		len = dentry.inode.length
-		read_data(dentry.inode, 0, mem, len)
+	if(read_dentry_by_index(inode_idx, &dentry) == 0){
+		curr_inode = (inode_t*)((uint8_t*) bootblock + ((dentry.inode+1) * BLOCK_SIZE));
+		len = curr_inode->length;
+		read_data(dentry.inode, 0, mem, len);
 		return 0;
 	}
 	return -1;
