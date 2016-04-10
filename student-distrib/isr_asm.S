@@ -275,7 +275,7 @@ sys_execute:
 
 	pushl	$USER_DS	#pushing the registers in correct order
 	pushl 	%ebx
-	pushfd	
+	pushf	
 	orl	$0x200, (%esp)
 	pushl 	%edx
 	pushl	$USER_CS

@@ -1,6 +1,8 @@
 #ifndef _SYS_CALLS_H
 #define _SYS_CALLS_H
 
+#include "types.h"
+
 /* 10 system calls */
 int32_t halt (uint8_t status);
 int32_t execute (const uint8_t* command);
@@ -14,6 +16,6 @@ int32_t set_handler (int32_t signum, void* handler_address);
 int32_t sigreturn (void);
 
 /* helper function to parse args for execute */
-void parse_cmd(const uint8_t* command, uint8_t** args);
+void parse_arg(const uint8_t* command, uint8_t** args);
 
 #endif /* _SYS_CALLS_H */
