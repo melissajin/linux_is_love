@@ -6,6 +6,15 @@
 #include "../devices/rtc.h"
 #include "../fs.h"
 
+/* alias driver functions after adding fops */
+#define rtc_open(x) rtc_fops.open(x);
+#define rtc_read(x, y, z) rtc_fops.read(x, y, z);
+#define rtc_write(x, y, z) rtc_fops.write(x, y, z);
+#define rtc_close(x) rtc_fops.close(x);
+
+#define terminal_read(x, y, z) term_fops.read(x, y, z);
+#define terminal_write(x, y, z) term_fops.write(x, y, z);
+
 // static void exec(char * s, int (*test_fn)());
 static void exec_print(char * s, void (*test_fn)());
 static void wait();

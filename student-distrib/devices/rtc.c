@@ -23,11 +23,21 @@
 
 extern void rtc_isr();
 
+static int32_t rtc_open(const uint8_t * filename);
+static int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes);
+static int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes);
+static int32_t rtc_close(int32_t fd);
+
 static int reading, open = 0;
 
 void rtc_init() {
     /* Populate IDT entry for rtc */
-    set_int_gate(0x28, (unsigned long) rtc_isr);    
+    set_int_gate(0x28, (unsigned long) rtc_isr);
+
+    rtc_fops.read = rtc_read;
+    rtc_fops.write = rtc_write;
+    rtc_fops.open = rtc_open;
+    rtc_fops.close = rtc_close;
 }
 
 void rtc_handler_main() {

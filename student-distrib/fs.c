@@ -1,11 +1,21 @@
-
 #include "fs.h"
+
+static int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
+static int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
+static int32_t fs_open (const uint8_t* filename);
+static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
  
  /* Initialize filesystem */
  void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
+
+	/* fops initialization. not the most elegant way but it works. */
+	fs_fops.read = fs_read;
+	fs_fops.write = fs_write;
+	fs_fops.open = fs_open;
+	fs_fops.close = fs_close;
  }
 
 /* read_dentry_by_name

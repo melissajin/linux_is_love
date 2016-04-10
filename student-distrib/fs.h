@@ -68,9 +68,6 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
 int32_t load(uint8_t inode, uint32_t* addr);
 
 /* Filesystem system calls */
-int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
-int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
-int32_t fs_open (const uint8_t* filename);
-int32_t fs_close (int32_t fd);
+fops_t fs_fops;
 
 #endif /* _FS_H */

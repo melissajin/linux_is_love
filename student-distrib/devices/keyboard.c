@@ -9,6 +9,11 @@
 
 extern void kybd_isr();
 
+static int32_t terminal_open(const uint8_t* filename);
+static int32_t terminal_close(int32_t fd);
+static int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes);
+static int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes);
+
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
 static uint16_t kybd_keys [] = {
@@ -181,6 +186,11 @@ void kybd_init(){
 
 	/* Set all of the values in the line buffer to the null character */
 	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
+
+	term_fops.read = terminal_read;
+	term_fops.write = terminal_write;
+	term_fops.open = terminal_open;
+	term_fops.close = terminal_close;
 }
 
 void update(uint16_t key){
