@@ -6,6 +6,10 @@
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
+#include "../fs.h"
+#include "../process.h"
+
+#define DEV_NAME "term"
 
 extern void kybd_isr();
 
@@ -121,6 +125,13 @@ static int hit_enter = 0;
 /* determine if the key is on */
 static int caps_lock = 0;
 
+fops_t term_fops = {
+	.read = terminal_read,
+	.write = terminal_write,
+	.open = terminal_open,
+	.close = terminal_close
+};
+
 int32_t terminal_open(const uint8_t* filename){
   return 0;
 }
@@ -187,10 +198,7 @@ void kybd_init(){
 	/* Set all of the values in the line buffer to the null character */
 	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 
-	term_fops.read = terminal_read;
-	term_fops.write = terminal_write;
-	term_fops.open = terminal_open;
-	term_fops.close = terminal_close;
+	add_device(DEV_NAME, &term_fops);
 }
 
 void update(uint16_t key){

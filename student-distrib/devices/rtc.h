@@ -6,7 +6,6 @@
 #define _RTC_H
 
 #include "../types.h"
-#include "../fs.h"
  
 #define RTC_IRQ_NUM  8
 
@@ -14,7 +13,5 @@
 void rtc_init();
 /* rtc interrupt handler */
 void rtc_handler_main();
-
-fops_t rtc_fops;
 
 #endif

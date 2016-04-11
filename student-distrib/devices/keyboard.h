@@ -6,7 +6,6 @@
 #define _KEYBOARD_H
 
 #include "../types.h"
-#include "../fs.h"
 
 #define KEYBOARD_PORT     0x64
 #define KEYBOARD_PORT_DATA 0x60
@@ -176,7 +175,5 @@ void update(uint16_t key);
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();
-
-fops_t term_fops;
 
 #endif

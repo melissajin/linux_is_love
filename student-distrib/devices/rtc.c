@@ -6,6 +6,8 @@
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
+#include "../fs.h"
+#include "../process.h"
 
 #define RTC_REG_PORT 0x70  /* Port for specifying reg and disabling NMI */
 #define RW_CMOS_PORT 0x71  /* Port used to read from or write to CMOS */
@@ -21,6 +23,8 @@
 #define RATE_MAX     1024
 #define RTC_ABS_MAX  32768
 
+#define DEV_NAME     "rtc"
+
 extern void rtc_isr();
 
 static int32_t rtc_open(const uint8_t * filename);
@@ -30,14 +34,18 @@ static int32_t rtc_close(int32_t fd);
 
 static int reading, open = 0;
 
+static fops_t rtc_fops = {
+    .read = rtc_read,
+    .write = rtc_write,
+    .open = rtc_open,
+    .close = rtc_close
+};
+
 void rtc_init() {
     /* Populate IDT entry for rtc */
     set_int_gate(0x28, (unsigned long) rtc_isr);
 
-    rtc_fops.read = rtc_read;
-    rtc_fops.write = rtc_write;
-    rtc_fops.open = rtc_open;
-    rtc_fops.close = rtc_close;
+    add_device(DEV_NAME, &rtc_fops);
 }
 
 void rtc_handler_main() {
