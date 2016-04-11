@@ -14,6 +14,8 @@
 #define DEAD            0x0
 #define ESP_MASK        0xFFFFF000
 
+extern void sys_execute();
+
 int32_t halt (uint8_t status){ return -1; }
 int32_t execute (const uint8_t* command) {
     uint8_t* args[1024];
@@ -98,6 +100,10 @@ int32_t execute (const uint8_t* command) {
 			:
 			:"d"(addr), "b"(vm_end)
 		);
+
+        sys_execute();
+
+        return 0;
 	}
 	return -1;
 }

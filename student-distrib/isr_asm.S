@@ -19,7 +19,7 @@
 
 
 sys_table:
-	.long halt, sys_execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
+	.long halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
 
 
 handle:
@@ -270,7 +270,6 @@ sys_call:		#preparing argument for handle_syscall
 	jmp handle_syscall
 
 sys_execute:
-	call 	execute
 	movw 	$USER_DS, %cx 	#setting the ds register to contain user ds
 	movw 	%cx, %ds
 
