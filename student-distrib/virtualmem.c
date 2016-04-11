@@ -82,7 +82,7 @@ void virtualmem_init()
  */
 void map_large_page(int32_t virtual_add, int32_t lower_b){
 	lower_b &= PDE_4MB_MASK;
-	pd[virtual_add >> PDE_IDX_OFFS] = lower_b | LARGE_INIT_FLAGS;
+	pd[virtual_add >> PDE_IDX_OFFS] = lower_b | LARGE_INIT_FLAGS | FLAG_U;
 
 	/* FLUSHING THE TLB */
 	asm volatile("					\n\
