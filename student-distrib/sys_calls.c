@@ -27,7 +27,12 @@ int32_t execute (const uint8_t* command) {
     fd_t* stdout;
     fd_t* fd;
     uint32_t i;
+    int32_t pid;
     uint32_t pcb_start;
+
+    pid = add_process();
+    if(pid < 0)
+        return -1;
 
     parse_arg(command, (uint8_t**)args);
 
@@ -75,6 +80,7 @@ int32_t execute (const uint8_t* command) {
             pcb->files[i] = fd;
         }
 
+        pcb->pid = pid;
         pcb->parent_pcb = parent_pcb;
         /* saving values in tss to return to parent process */
         tss.esp0 = esp;

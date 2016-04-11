@@ -4,10 +4,7 @@
 #include "fs.h"
 
 #define FILE_ARRAY_LEN	8
-#define MAX_PROCESSES	6
 
-int32_t process_num = 0;
-int32_t procs[MAX_PROCESSES] = {0,0,0,0,0,0};
 
 typedef struct {
     fops_t * fops;
@@ -24,5 +21,7 @@ typedef struct pcb {
 
 int add_device(char * name, fops_t * fops);
 fops_t * get_device_fops(char * req_name);
+int32_t add_process();
+int32_t delete_process(int32_t pid);
 
 #endif /* _PROCESS_H */
