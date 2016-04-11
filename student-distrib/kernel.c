@@ -12,6 +12,7 @@
 #include "virtualmem.h"
 #include "isr.h"
 #include "fs.h"
+#include "sys_calls.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -174,6 +175,8 @@ entry (unsigned long magic, unsigned long addr)
 	 * without showing you any output */
 	printf("Enabling Interrupts\n");
 	sti();
+	execute((uint8_t*)"shell");
+	//test();
 
 	/* Execute the first program (`shell') ... */
 

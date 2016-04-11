@@ -3,7 +3,11 @@
 
 #include "fs.h"
 
-#define FILE_ARRAY_LEN 8
+#define FILE_ARRAY_LEN	8
+#define MAX_PROCESSES	6
+
+int32_t process_num = 0;
+int32_t procs[MAX_PROCESSES] = {0,0,0,0,0,0};
 
 typedef struct {
     fops_t * fops;
@@ -15,7 +19,7 @@ typedef struct {
 typedef struct pcb {
 	fd_t files[FILE_ARRAY_LEN];
 	int32_t pid;
-	int32_t parent_pid;
+	struct pcb* parent_pcb;
 } pcb_t;
 
 int add_device(char * name, fops_t * fops);
