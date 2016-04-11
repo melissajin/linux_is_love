@@ -9,6 +9,7 @@
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
 .global sys_call
 .global kybd_isr, rtc_isr
+.global sys_execute
 
 .extern fault_handler		#assembly linkage for all our exceptions
 .extern sys_call_handler	#assembly linkage for sys calls

@@ -12,7 +12,7 @@
 #define PCB_SIZE        0x2000
 #define LIVE            0x1
 #define DEAD            0x0
-#define ESP_MASK        0x1000
+#define ESP_MASK        0xFFFFF000
 
 int32_t halt (uint8_t status){ return -1; }
 int32_t execute (const uint8_t* command) {
@@ -23,12 +23,13 @@ int32_t execute (const uint8_t* command) {
     uint32_t esp;
     uint32_t vm_end;
     pcb_t* pcb;
-    fd_t* stdin;
-    fd_t* stdout;
-    fd_t* fd;
+    fd_t stdin;
+    fd_t stdout;
+    fd_t fd;
     uint32_t i;
     int32_t pid;
     uint32_t pcb_start;
+    fops_t * term_fops;
 
     pid = add_process();
     if(pid < 0)
@@ -47,7 +48,7 @@ int32_t execute (const uint8_t* command) {
 		addr = ((uint32_t)buf[27] << 24) | ((uint32_t)buf[26] << 16) | ((uint32_t)buf[25] << 8)| ((uint32_t)buf[24]);
 		printf("addr: %x\n", addr);
         vm_end = PROG_VM_START + SPACE_4MB;
-		map_large_page(PROG_VM_START, PROG_VM_START + 0*SPACE_4MB);
+		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid*SPACE_4MB);
 		
         /* get current stack pointer and put in */
         asm volatile (
@@ -58,30 +59,33 @@ int32_t execute (const uint8_t* command) {
         /* starting address of current pcb */
         pcb_start = esp & ESP_MASK; 
 
+        /* get terminal fops */
+        term_fops = get_device_fops("term");
+
         /* setting the pcb in the kernel stack */
-        pcb = (pcb_t*) KERNEL_MEM_END + process_num * PCB_SIZE;
-        stdin->fops = NULL; // FIXXXXXXX
-        stdin->inode = NULL;
-        stdin->pos = 0;
-        stdin->flags = LIVE;
+        pcb = (pcb_t*) KERNEL_MEM_END - (pid + 1) * PCB_SIZE;
+        stdin.fops = term_fops;
+        stdin.inode = NULL;
+        stdin.pos = 0;
+        stdin.flags = LIVE;
         pcb->files[0] = stdin;
 
-        stdout->fops = NULL; //FIXXXXXX
-        stdout->inode = NULL;
-        stdout->pos = 1;
-        stdout->flags = LIVE;
+        stdout.fops = term_fops;
+        stdout.inode = NULL;
+        stdout.pos = 1;
+        stdout.flags = LIVE;
         pcb->files[1] = stdout;
 
         for(i = 2; i < 8; i++){
-            fd->fops = NULL;
-            fd->inode = NULL;
-            fd->pos = i;
-            fd->flags = DEAD;
+            fd.fops = NULL;
+            fd.inode = NULL;
+            fd.pos = i;
+            fd.flags = DEAD;
             pcb->files[i] = fd;
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = parent_pcb;
+        pcb->parent_pcb = (pcb_t *) pcb_start;
         /* saving values in tss to return to parent process */
         tss.esp0 = esp;
         tss.ss0 = pcb_start;

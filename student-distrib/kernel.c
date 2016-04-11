@@ -18,6 +18,8 @@
 /* Check if the bit BIT in FLAGS is set. */
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 
+extern void sys_execute(uint8_t * name);
+
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
 void
@@ -175,7 +177,7 @@ entry (unsigned long magic, unsigned long addr)
 	 * without showing you any output */
 	printf("Enabling Interrupts\n");
 	sti();
-	execute((uint8_t*)"shell");
+	sys_execute((uint8_t *) "shell");
 	//test();
 
 	/* Execute the first program (`shell') ... */
