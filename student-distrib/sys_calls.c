@@ -89,8 +89,8 @@ int32_t execute (const uint8_t* command) {
         pcb->pid = pid;
         pcb->parent_pcb = (pcb_t *) pcb_start;
         /* saving values in tss to return to parent process */
-        tss.esp0 = esp;
-        tss.ss0 = pcb_start;
+        tss.esp0 = KERNEL_MEM_END - 4;
+        tss.ss0 = KERNEL_DS;
 
 		/* load file in physical memory */
 		load(&dentry, (uint8_t*) START_EXE_ADDR);
