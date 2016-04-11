@@ -13,7 +13,7 @@
 #define LIVE            0x1
 #define DEAD            0x0
 #define ESP_MASK        0xFFFFF000
-
+#define START_EXE_ADDR  0x08048000
 extern void sys_execute();
 
 int32_t halt (uint8_t status){ return -1; }
@@ -93,7 +93,7 @@ int32_t execute (const uint8_t* command) {
         tss.ss0 = pcb_start;
 
 		/* load file in physical memory */
-		load(dentry.inode, (uint8_t*) addr);
+		load(&dentry, (uint8_t*) START_EXE_ADDR);
 		
 		asm volatile("\n\
 			"
