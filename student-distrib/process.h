@@ -24,4 +24,12 @@ fops_t * get_device_fops(char * req_name);
 int32_t add_process();
 int32_t delete_process(int32_t pid);
 
+#define get_esp(x)          \
+do {                        \
+    asm volatile (          \
+        "movl %%esp, %0"    \
+        : "=rm" (x)         \
+    );                      \
+} while(0)
+
 #endif /* _PROCESS_H */

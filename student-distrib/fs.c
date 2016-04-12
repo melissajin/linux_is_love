@@ -193,6 +193,10 @@ int32_t load(dentry_t * d, uint8_t * mem) {
 	return 0;
 }
 
+inode_t * get_inode_ptr(uint32_t inode) {
+	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
+}
+
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	return -1;
  }

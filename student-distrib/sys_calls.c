@@ -16,6 +16,7 @@
 #define START_EXE_ADDR  0x08048000
 
 int32_t halt (uint8_t status){ return -1; }
+
 int32_t execute (const uint8_t* command) {
     uint8_t* args[1024];
     uint8_t buf[40];
@@ -52,10 +53,7 @@ int32_t execute (const uint8_t* command) {
 		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid*SPACE_4MB);
 		
         /* get current stack pointer and put in */
-        asm volatile (
-            "movl %%esp, %0"
-            :"=rm" (esp)
-        );
+        get_esp(esp);
         
         /* starting address of current pcb */
         pcb_start = esp & ESP_MASK; 
@@ -120,9 +118,75 @@ int32_t execute (const uint8_t* command) {
 	return -1;
 }
 
-int32_t read (int32_t fd, void* buf, int32_t nbytes){ return -1; }
-int32_t write (int32_t fd, const void* buf, int32_t nbytes){ return -1;}
-int32_t open (const uint8_t* filename){ return -1; }
+int32_t read (int32_t fd, void* buf, int32_t nbytes){
+    uint32_t esp;
+    pcb_t * pcb;
+
+	if(fd < 0 || fd == 1 || fd > 7) return -1;
+
+    get_esp(esp);
+    pcb = (pcb_t *) (esp & ESP_MASK);
+
+    return pcb -> files[fd].fops -> read(fd, buf, nbytes);
+}
+
+int32_t write (int32_t fd, const void* buf, int32_t nbytes){
+    uint32_t esp;
+    pcb_t * pcb;
+
+    if(fd < 0 || fd == 0 || fd > 7) return -1;
+
+    get_esp(esp);
+    pcb = (pcb_t *) (esp & ESP_MASK);
+
+    return pcb -> files[fd].fops -> write(fd, buf, nbytes);
+}
+
+int32_t open (const uint8_t* filename){
+	int i, fd = -1;
+    uint32_t esp;
+	pcb_t* pcb_ptr;
+	dentry_t temp_dentry;
+	fd_t* fd_ptr = NULL;
+    fops_t * fops;
+
+    get_esp(esp);
+    pcb_ptr = (pcb_t*)(esp & ESP_MASK);
+
+    /* find available file descriptor entry */
+    for(i = 2; i < FILE_ARRAY_LEN ; i++){
+        if(pcb_ptr->files[i].flags == DEAD){
+            fd = i;
+            break;
+        }
+    }
+
+    /* if no available fd directory */
+    if(fd == -1) return -1;
+
+    fd_ptr = &(pcb_ptr -> files[i]);
+
+	/* get driver fops */
+    fops = get_device_fops((char *) filename);
+    if(fops != NULL) {
+        fd_ptr -> fops = fops;
+        fd_ptr -> inode = NULL;
+        fd_ptr -> flags = LIVE;
+        return fd;
+    }
+
+	if(read_dentry_by_name(filename, &temp_dentry) == -1){
+		return -1;
+	}
+
+    fd_ptr -> fops = get_device_fops("fs");
+    fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
+    fd_ptr -> flags = LIVE;
+    fd_ptr -> pos = 0;
+	
+ 	return fd;
+}
+
 int32_t close (int32_t fd){ return -1; }
 int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }
 int32_t vidmap (uint8_t** screen_start){ return -1; }

@@ -20,7 +20,7 @@
 
 typedef struct dentry {
 	int8_t fname[FNAME_LEN];
-	int32_t ftype;
+	int32_t ftype; //0-RTC, 1-Directory, 2-Regular File
 	int32_t inode;
 	int32_t pad[6];
 } dentry_t;
@@ -63,6 +63,9 @@ uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length);
 
 /* Reads data in dentry starting from offset */
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
+
+/* get pointer to inode */
+inode_t * get_inode_ptr(uint32_t inode);
 
 /* Loads an executable file into correct location in memory */
 // int32_t load(uint32_t inode, uint8_t* addr);

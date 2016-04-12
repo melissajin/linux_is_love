@@ -267,10 +267,4 @@ sys_call:		#preparing argument for handle_syscall
 	cli
 	jmp handle_syscall
 
-sys_halt:
-	call	halt
-	jmp 	halt_ret_label
-	
-	
-
 .end
