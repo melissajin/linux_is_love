@@ -93,6 +93,8 @@ void map_large_page(int32_t virtual_add, int32_t lower_b){
 		:
 		: "eax"
 	);
+}
 
-	return;
+void unmap_large_page(int32_t virtual_add) {
+	pd[virtual_add >> PDE_IDX_OFFS] &= ~FLAG_P;
 }

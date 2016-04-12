@@ -40,10 +40,10 @@ handle:
 	call	fault_handler
 
 	popl	%eax		#restoring all our registers
-	pop	%gs
-	pop	%fs
-	pop	%es
-	pop	%ds
+	pop		%gs
+	pop		%fs
+	pop		%es
+	pop		%ds
 	popa
 
 	add		$8, %esp #clearing stack

@@ -15,9 +15,42 @@
 #define ESP_MASK        0xFFFFE000
 #define START_EXE_ADDR  0x08048000
 
-int32_t halt (uint8_t status){ return -1; }
+int32_t halt (uint8_t status) {
+    pcb_t * pcb_child_ptr, * pcb_parent_ptr;
+    uint32_t esp, ebp;
+
+    get_esp(esp);
+    pcb_child_ptr = (pcb_t *) (esp & ESP_MASK);
+    pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
+
+    unmap_large_page(PROG_VM_START);
+    if(pcb_parent_ptr != NULL) {
+        map_large_page(PROG_VM_START, KERNEL_MEM_END + pcb_parent_ptr -> pid * SPACE_4MB);
+        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - 4;
+    } else {
+        tss.esp0 = KERNEL_MEM_END;
+    }
+    
+    esp = pcb_child_ptr -> esp_parent;
+    ebp = pcb_child_ptr -> ebp_parent;
+
+    proc_count--;
+
+    asm volatile("              \n\
+        movl    %1, %%esp       \n\
+        movl    %2, %%ebp       \n\
+        movb    %0, %%bl        \n\
+        jmp     halt_ret_label  \n\
+        "
+        :
+        : "r" (status), "r" (esp), "r" (ebp)
+        : "cc", "memory"
+    );
+    return 0;
+}
 
 int32_t execute (const uint8_t* command) {
+    int8_t retval;
     uint8_t* args[1024];
     uint8_t buf[40];
     dentry_t dentry;
@@ -47,7 +80,7 @@ int32_t execute (const uint8_t* command) {
 	if(buf[0] == 0x7f && buf[1] == 0x45 && buf[2] == 0x4c && buf[3] == 0x46){
 		addr = ((uint32_t)buf[27] << 24) | ((uint32_t)buf[26] << 16) | ((uint32_t)buf[25] << 8)| ((uint32_t)buf[24]);
         vm_end = PROG_VM_START + SPACE_4MB - 4;
-		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid*SPACE_4MB);
+		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid * SPACE_4MB);
 		
         /* get current stack pointer and put in */
         get_esp(esp);
@@ -68,7 +101,7 @@ int32_t execute (const uint8_t* command) {
 
         stdout.fops = term_fops;
         stdout.inode = NULL;
-        stdout.pos = 1;
+        stdout.pos = 0;
         stdout.flags = LIVE;
         pcb->files[1] = stdout;
 
@@ -81,13 +114,26 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = (pcb_t *) pcb_start;
-        /* saving values in tss to return to parent process */
-        tss.esp0 = KERNEL_MEM_END - 4;
+        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;        
+
+        /* saving values in tss to return to process kernel stack */
+        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - 4;
         tss.ss0 = KERNEL_DS;
 
 		/* load file in physical memory */
 		load(&dentry, (uint8_t*) START_EXE_ADDR);
+
+        /* increment # of processes */
+        proc_count++;
+
+        /* save regs for return */
+        // if(pcb -> parent_pcb != NULL) {
+        //     get_ebp(pcb -> parent_pcb -> regs.ebp);
+        //     get_esp(pcb -> parent_pcb -> regs.esp);
+        // } else {
+            get_ebp(pcb -> ebp_parent);
+            get_esp(pcb -> esp_parent);
+        // }
 		
 		asm volatile("              \n\
 			xorl    %%ecx, %%ecx    \n\
@@ -97,20 +143,21 @@ int32_t execute (const uint8_t* command) {
             movw    %%cx, %%fs      \n\
             movw    %%cx, %%gs      \n\
             pushl   $0x2B           \n\
-            pushl   %1              \n\
+            pushl   %2              \n\
             pushf                   \n\
             orl     $0x200, (%%esp) \n\
             pushl   $0x23           \n\
-            pushl   %0              \n\
+            pushl   %1              \n\
             iret                    \n\
             halt_ret_label:         \n\
+            movb    %%bl, %0        \n\
             "
-			:
+			: "=rm" (retval)
 			: "r" (addr), "r" (vm_end)
             : "cc", "memory"
 		);
 
-        return 0;
+        return retval;
 	}
 	return -1;
 }
