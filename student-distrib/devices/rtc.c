@@ -129,7 +129,7 @@ int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes) {
     outb((curr & 0xF0) | rs, RW_CMOS_PORT);
     sti();
 
-    return 0;
+    return 1;
 }
 
 /* close rtc */
