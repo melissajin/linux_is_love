@@ -28,7 +28,7 @@ fops_t * get_device_fops(char * req_name) {
 	char * dev_name;
 	for(i = 0; i < num_devices; i++) {
 		dev_name = devices[i].name;
-		if(strncmp(req_name, dev_name, strlen(req_name))) {
+		if(strncmp(req_name, dev_name, strlen(req_name)) == 0) {
 			return devices[i].fops;
 		}
 	}

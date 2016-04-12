@@ -50,17 +50,32 @@ handle:
 	iret
 
 handle_syscall:		#similar functionality as above except for system calls
-	pusha
+	/* save regs */
+	pushl	%ebx
+	pushl	%ecx
+	pushl	%edx
+	pushl	%esi
+	pushl	%edi
+
+	/* push args */
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
 
+	decl	%eax	/* correct numbering 1-10 to 0-9 */
 	call *sys_table(,%eax, 4)
 
+	/* pop args */
 	popl	%ebx
 	popl	%ecx
 	popl	%edx
-	popa
+	
+	/* restore regs */
+	popl	%edi
+	popl	%esi
+	popl	%edx
+	popl	%ecx
+	popl	%ebx
 
 	iret
 

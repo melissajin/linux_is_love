@@ -12,7 +12,7 @@
 #define PCB_SIZE        0x2000
 #define LIVE            0x1
 #define DEAD            0x0
-#define ESP_MASK        0xFFFFF000
+#define ESP_MASK        0xFFFFE000
 #define START_EXE_ADDR  0x08048000
 
 int32_t halt (uint8_t status){ return -1; }
@@ -56,13 +56,13 @@ int32_t execute (const uint8_t* command) {
         get_esp(esp);
         
         /* starting address of current pcb */
-        pcb_start = esp & ESP_MASK; 
+        pcb_start = esp & ESP_MASK;
 
         /* get terminal fops */
         term_fops = get_device_fops("term");
 
         /* setting the pcb in the kernel stack */
-        pcb = (pcb_t*) KERNEL_MEM_END - (pid + 1) * PCB_SIZE;
+        pcb = (pcb_t*) (KERNEL_MEM_END - (pid + 1) * PCB_SIZE);
         stdin.fops = term_fops;
         stdin.inode = NULL;
         stdin.pos = 0;
