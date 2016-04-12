@@ -14,7 +14,6 @@
 #define DEAD            0x0
 #define ESP_MASK        0xFFFFF000
 #define START_EXE_ADDR  0x08048000
-extern void sys_execute();
 
 int32_t halt (uint8_t status){ return -1; }
 int32_t execute (const uint8_t* command) {
@@ -49,7 +48,7 @@ int32_t execute (const uint8_t* command) {
         printf("executable\n");
 		addr = ((uint32_t)buf[27] << 24) | ((uint32_t)buf[26] << 16) | ((uint32_t)buf[25] << 8)| ((uint32_t)buf[24]);
 		printf("addr: %x\n", addr);
-        vm_end = PROG_VM_START + SPACE_4MB;
+        vm_end = PROG_VM_START + SPACE_4MB - 4;
 		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid*SPACE_4MB);
 		
         /* get current stack pointer and put in */
@@ -96,12 +95,25 @@ int32_t execute (const uint8_t* command) {
 		load(&dentry, (uint8_t*) START_EXE_ADDR);
 		
 		asm volatile("\n\
-			"
+			xorl    %%ecx, %%ecx \n\
+            movw    $0x23, %%cx   \n\
+            movw    %%cx, %%ds \n\
+            movw    %%cx, %%es \n\
+            movw    %%cx, %%fs \n\
+            movw    %%cx, %%gs \n\
+            pushl   $0x2B  \n\
+            pushl   %1 \n\
+            pushf   \n\
+            orl     $0x200, (%%esp)  \n\
+            pushl   $0x23 \n\
+            pushl   %0 \n\
+            iret \n\
+            halt_ret_label: \n\
+            "
 			:
-			:"d"(addr), "b"(vm_end)
+			: "r" (addr), "r" (vm_end)
+            : "cc", "memory"
 		);
-
-        sys_execute();
 
         return 0;
 	}

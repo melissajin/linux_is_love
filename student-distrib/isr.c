@@ -138,6 +138,7 @@ void fault_handler(struct regs * r){
 		printf("Exception %d: ", r -> int_no);
 		printf(exception_messages[r -> int_no]);
 		printf("\n");
+		printf("Code: %d\n", r -> err_code);
 	}
 	else
 	{

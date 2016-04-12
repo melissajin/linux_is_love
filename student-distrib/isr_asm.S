@@ -9,7 +9,6 @@
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
 .global sys_call
 .global kybd_isr, rtc_isr
-.global sys_execute
 
 .extern fault_handler		#assembly linkage for all our exceptions
 .extern sys_call_handler	#assembly linkage for sys calls
@@ -63,7 +62,6 @@ handle_syscall:		#similar functionality as above except for system calls
 	popl	%edx
 	popa
 
-	add		$8, %esp
 	iret
 
 isr0:
@@ -268,32 +266,6 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 sys_call:		#preparing argument for handle_syscall
 	cli
 	jmp handle_syscall
-
-sys_execute:
-	xorl	%ecx, %ecx
-	movw 	$USER_DS, %cx 	#setting the ds register to contain user ds
-	movw 	%cx, %ds
-	movw	%cx, %fs
-	movw	%cx, %es
-	movw	%cx, %gs
-
-	pushl	$USER_DS	#pushing the registers in correct order
-	pushl 	$0x83FFFFC
-	pushf	
-	orl		$0x200, (%esp)
-	pushl	$USER_CS
-	pushl 	%edx
-
-	// pushl	$USER_CS
-	// pushl	%edx
-	// pushf
-	// orl		$0x200, (%esp)
-	// pushl	%ebx
-	// pushl	$USER_DS
-
-	iret
-halt_ret_label:
-	ret
 
 sys_halt:
 	call	halt
