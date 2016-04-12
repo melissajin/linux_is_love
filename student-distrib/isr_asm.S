@@ -63,7 +63,7 @@ handle_syscall:		#similar functionality as above except for system calls
 	pushl	%ebx
 
 	decl	%eax	/* correct numbering 1-10 to 0-9 */
-	call *sys_table(,%eax, 4)
+	call	*sys_table(,%eax, 4)
 
 	/* pop args */
 	popl	%ebx
@@ -266,7 +266,7 @@ isr31:
 
 kybd_isr:		#A handler/assembly linkage for the keyboard just saves state of machine
 	cli
-	pusha		
+	pusha
 	call keyboard_handler_main
 	popa
 	iret
@@ -279,7 +279,7 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 	iret
 
 sys_call:		#preparing argument for handle_syscall
-	cli
+	sti
 	jmp handle_syscall
 
 .end

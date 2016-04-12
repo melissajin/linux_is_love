@@ -21,7 +21,7 @@ static fops_t fs_fops = {
  void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
 
-	add_device(DEV_NAME, &fs_fops);
+	add_device((uint8_t *) DEV_NAME, &fs_fops);
  }
 
 /* read_dentry_by_name

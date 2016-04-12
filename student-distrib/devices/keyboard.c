@@ -198,7 +198,7 @@ void kybd_init(){
 	/* Set all of the values in the line buffer to the null character */
 	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 
-	add_device(DEV_NAME, &term_fops);
+	add_device((uint8_t *) DEV_NAME, &term_fops);
 }
 
 void update(uint16_t key){

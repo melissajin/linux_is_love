@@ -50,7 +50,7 @@ typedef struct {
 } fops_t;
 
 /* Initialize filesystem */
-extern void fs_init(module_t *mem_mod);
+void fs_init(module_t *mem_mod);
 
 /* Reads a dentry by filename, returns pointer to dentry block */
 int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry);

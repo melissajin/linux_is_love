@@ -5,7 +5,7 @@
 #define MAX_PROCESSES	6
 
 typedef struct {
-	char * name;
+	uint8_t * name;
 	fops_t * fops;
 } dev_t;
 
@@ -14,7 +14,7 @@ static int32_t procs[MAX_PROCESSES] = {0,0,0,0,0,0};
 static dev_t devices[MAX_DEVICES];
 static int num_devices = 0;
 
-int add_device(char * name, fops_t * fops) {
+int add_device(uint8_t * name, fops_t * fops) {
 	if(num_devices == MAX_DEVICES) return -1;
 
 	devices[num_devices].name = name;
@@ -23,12 +23,13 @@ int add_device(char * name, fops_t * fops) {
 	return 0;
 }
 
-fops_t * get_device_fops(char * req_name) {
+fops_t * get_device_fops(const uint8_t * req_name) {
 	int i;
-	char * dev_name;
+	uint8_t * dev_name;
 	for(i = 0; i < num_devices; i++) {
 		dev_name = devices[i].name;
-		if(strncmp(req_name, dev_name, strlen(req_name)) == 0) {
+		if(strncmp((int8_t *) req_name, (int8_t *) dev_name,
+				strlen((int8_t *) req_name)) == 0) {
 			return devices[i].fops;
 		}
 	}

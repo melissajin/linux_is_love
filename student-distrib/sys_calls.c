@@ -39,16 +39,13 @@ int32_t execute (const uint8_t* command) {
 
     parse_arg(command, (uint8_t**)args);
 
-    printf("%s\n", args[0]);
     /* check for valid executable */
     if(-1 == read_dentry_by_name(args[0], &dentry))
 		return -1; 
 	if(40 > read_data(dentry.inode, 0, buf, 40))
 		return -1;
 	if(buf[0] == 0x7f && buf[1] == 0x45 && buf[2] == 0x4c && buf[3] == 0x46){
-        printf("executable\n");
 		addr = ((uint32_t)buf[27] << 24) | ((uint32_t)buf[26] << 16) | ((uint32_t)buf[25] << 8)| ((uint32_t)buf[24]);
-		printf("addr: %x\n", addr);
         vm_end = PROG_VM_START + SPACE_4MB - 4;
 		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid*SPACE_4MB);
 		
@@ -59,7 +56,7 @@ int32_t execute (const uint8_t* command) {
         pcb_start = esp & ESP_MASK;
 
         /* get terminal fops */
-        term_fops = get_device_fops("term");
+        term_fops = get_device_fops((uint8_t *) "term");
 
         /* setting the pcb in the kernel stack */
         pcb = (pcb_t*) (KERNEL_MEM_END - (pid + 1) * PCB_SIZE);
@@ -78,7 +75,7 @@ int32_t execute (const uint8_t* command) {
         for(i = 2; i < 8; i++){
             fd.fops = NULL;
             fd.inode = NULL;
-            fd.pos = i;
+            fd.pos = 0;
             fd.flags = DEAD;
             pcb->files[i] = fd;
         }
@@ -92,21 +89,21 @@ int32_t execute (const uint8_t* command) {
 		/* load file in physical memory */
 		load(&dentry, (uint8_t*) START_EXE_ADDR);
 		
-		asm volatile("\n\
-			xorl    %%ecx, %%ecx \n\
-            movw    $0x23, %%cx   \n\
-            movw    %%cx, %%ds \n\
-            movw    %%cx, %%es \n\
-            movw    %%cx, %%fs \n\
-            movw    %%cx, %%gs \n\
-            pushl   $0x2B  \n\
-            pushl   %1 \n\
-            pushf   \n\
-            orl     $0x200, (%%esp)  \n\
-            pushl   $0x23 \n\
-            pushl   %0 \n\
-            iret \n\
-            halt_ret_label: \n\
+		asm volatile("              \n\
+			xorl    %%ecx, %%ecx    \n\
+            movw    $0x23, %%cx     \n\
+            movw    %%cx, %%ds      \n\
+            movw    %%cx, %%es      \n\
+            movw    %%cx, %%fs      \n\
+            movw    %%cx, %%gs      \n\
+            pushl   $0x2B           \n\
+            pushl   %1              \n\
+            pushf                   \n\
+            orl     $0x200, (%%esp) \n\
+            pushl   $0x23           \n\
+            pushl   %0              \n\
+            iret                    \n\
+            halt_ret_label:         \n\
             "
 			:
 			: "r" (addr), "r" (vm_end)
@@ -167,7 +164,7 @@ int32_t open (const uint8_t* filename){
     fd_ptr = &(pcb_ptr -> files[i]);
 
 	/* get driver fops */
-    fops = get_device_fops((char *) filename);
+    fops = get_device_fops(filename);
     if(fops != NULL) {
         fd_ptr -> fops = fops;
         fd_ptr -> inode = NULL;
@@ -179,7 +176,7 @@ int32_t open (const uint8_t* filename){
 		return -1;
 	}
 
-    fd_ptr -> fops = get_device_fops("fs");
+    fd_ptr -> fops = get_device_fops((uint8_t *) "fs");
     fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
     fd_ptr -> flags = LIVE;
     fd_ptr -> pos = 0;
