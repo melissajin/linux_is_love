@@ -46,6 +46,7 @@ int32_t halt (uint8_t status) {
     esp = pcb_child_ptr -> esp_parent;
     ebp = pcb_child_ptr -> ebp_parent;
 
+    delete_process(pcb_child_ptr -> pid);
     proc_count--;
 
     asm volatile("              \n\
