@@ -180,9 +180,9 @@ entry (unsigned long magic, unsigned long addr)
 	/* Execute the first program (`shell') ... */
 	clear();
 	proc_count = 0;
-	execute((uint8_t *) "shell");
-
-	printf("Shell returned\n");
+	while(1) {
+		execute((uint8_t *) "shell");
+	}
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");

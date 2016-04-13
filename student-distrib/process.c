@@ -9,7 +9,7 @@ typedef struct {
 	fops_t * fops;
 } dev_t;
 
-static int32_t procs[MAX_PROCESSES+1] = {0,0,0,0,0,0,0};
+static int32_t procs[MAX_PROCESSES + 1] = {0};
 
 static dev_t devices[MAX_DEVICES];
 static int num_devices = 0;
@@ -38,7 +38,7 @@ fops_t * get_device_fops(const uint8_t * req_name) {
 
 int32_t add_process(){
 	uint32_t i;
-	for(i = 1; i<MAX_PROCESSES+1; i++){
+	for(i = 1; i < MAX_PROCESSES + 1; i++){
 		if(procs[i] == 0){
 			procs[i] = 1;
 			return i;

@@ -17,6 +17,7 @@
 #define BYTES_DENTRY 64
 #define MAX_DIR_ENTRY_CHARS (16*33)
 #define DIRECTORY_INODE 0
+#define FS_DEV_NAME "fs"
 
 typedef struct dentry {
 	int8_t fname[FNAME_LEN];
@@ -68,7 +69,6 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
 inode_t * get_inode_ptr(uint32_t inode);
 
 /* Loads an executable file into correct location in memory */
-// int32_t load(uint32_t inode, uint8_t* addr);
 int32_t load(dentry_t * d, uint8_t * mem);
 
 #endif /* _FS_H */
