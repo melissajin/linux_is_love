@@ -178,9 +178,9 @@ entry (unsigned long magic, unsigned long addr)
 	sti();
 
 	/* Execute the first program (`shell') ... */
-	clear();
 	proc_count = 0;
 	while(1) {
+		clear();
 		execute((uint8_t *) "shell");
 	}
 
