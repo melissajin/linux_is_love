@@ -9,7 +9,7 @@ static int32_t fs_open (const uint8_t* filename);
 static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
-static num_dir_reads = 0;
+static int32_t num_dir_reads = 0;
 
 static fops_t fs_fops = {
 	.read = fs_read,
@@ -93,7 +93,7 @@ static fops_t fs_fops = {
  	inode_t *curr_inode;
  	bytes_read = 0;
 	
-	if(inode == DIRECTORY_INODE && num_dir_reads < bootblock.dir_entries_cnt){
+	if(inode == DIRECTORY_INODE && num_dir_reads < bootblock -> dir_entries_cnt){
 		bytes_read = read_directory_entry(num_dir_reads, buf, length);
 		num_dir_reads++;
 	}
@@ -178,7 +178,7 @@ static fops_t fs_fops = {
 	uint32_t ret_val = 0;
 	dentry_t dentry;
 
-	read_dentry_by_index(k, &dentry);
+	read_dentry_by_index(entry, &dentry);
 	for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
 		if(ret_val < length){
 			buf[buf_idx++] = dentry.fname[i]; 
@@ -216,29 +216,27 @@ inode_t * get_inode_ptr(uint32_t inode) {
 	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
 }
 
- int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
- 	int32_t bytes_read;
- 	uint32_t esp;
-    pcb_t * pcb;
-    fd_t fs_fd;
+int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
+	int32_t bytes_read;
+	pcb_t * pcb;
+	fd_t fs_fd;
 
- 	get_esp(esp);
-    pcb = (pcb_t *) (esp & ESP_MASK);
-    fs_fd = pcb -> files[fd];
-    
- 	bytes_read = read_data(fs_fd.inode, fs_fd.pos, buf, nbytes);
- 	fs_fd.pos = bytes_read;
- 	return bytes_read;
- }
+	pcb(pcb);
+	fs_fd = pcb -> files[fd];
 
- int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes){ 
- 	return -1; 
- }
+	bytes_read = read_data(fs_fd.inode_num, fs_fd.pos, buf, nbytes);
+	fs_fd.pos = bytes_read;
+	return bytes_read;
+}
 
- int32_t fs_open (const uint8_t* filename){ 
- 	return 0; 
- }
+int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes){ 
+	return -1; 
+}
 
- int32_t fs_close (int32_t fd){ 
- 	return 0; 
- }
+int32_t fs_open (const uint8_t* filename){ 
+	return 0; 
+}
+
+int32_t fs_close (int32_t fd){ 
+	return 0; 
+}

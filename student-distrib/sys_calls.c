@@ -12,7 +12,6 @@
 #define PCB_SIZE        0x2000
 #define LIVE            0x1
 #define DEAD            0x0
-#define ESP_MASK        0xFFFFE000
 #define START_EXE_ADDR  0x08048000
 
 #define ELF_HEADER_LEN  40
@@ -32,7 +31,7 @@ int32_t halt (uint8_t status) {
     uint32_t esp, ebp;
 
     get_esp(esp);
-    pcb_child_ptr = (pcb_t *) (esp & ESP_MASK);
+    pcb_child_ptr = (pcb_t *) (esp & PCB_MASK);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
     unmap_large_page(PROG_VM_START);
@@ -99,7 +98,7 @@ int32_t execute (const uint8_t* command) {
         get_esp(esp);
         
         /* starting address of current pcb */
-        pcb_start = esp & ESP_MASK;
+        pcb_start = esp & PCB_MASK;
 
         /* get terminal fops */
         term_fops = get_device_fops((uint8_t *) TERM_NAME);
@@ -178,7 +177,7 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
 	if(fd < 0 || fd == 1 || fd >= FILE_ARRAY_LEN) return -1;
 
     get_esp(esp);
-    pcb = (pcb_t *) (esp & ESP_MASK);
+    pcb = (pcb_t *) (esp & PCB_MASK);
 
     return pcb -> files[fd].fops -> read(fd, buf, nbytes);
 }
@@ -191,7 +190,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     if(fd < 0 || fd == 0 || fd >= FILE_ARRAY_LEN) return -1;
 
     get_esp(esp);
-    pcb = (pcb_t *) (esp & ESP_MASK);
+    pcb = (pcb_t *) (esp & PCB_MASK);
 
     return pcb -> files[fd].fops -> write(fd, buf, nbytes);
 }
@@ -205,7 +204,7 @@ int32_t open (const uint8_t* filename){
     fops_t * fops;
 
     get_esp(esp);
-    pcb_ptr = (pcb_t*)(esp & ESP_MASK);
+    pcb_ptr = (pcb_t*)(esp & PCB_MASK);
 
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
@@ -226,6 +225,7 @@ int32_t open (const uint8_t* filename){
     if(fops != NULL) {
         fd_ptr -> fops = fops;
         fd_ptr -> inode = NULL;
+        fd_ptr -> inode_num = 0;
         fd_ptr -> flags = LIVE;
         return fd;
     }
@@ -236,6 +236,7 @@ int32_t open (const uint8_t* filename){
 
     fd_ptr -> fops = get_device_fops((uint8_t *) FS_DEV_NAME);
     fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
+    fd_ptr -> inode_num = temp_dentry.inode;
     fd_ptr -> flags = LIVE;
     fd_ptr -> pos = 0;
 	
@@ -250,13 +251,15 @@ int32_t close (int32_t fd){
     if(fd < 2 || fd > 7) return -1; 
 
     get_esp(esp);
-    pcb_ptr = (pcb_t*)(esp & ESP_MASK);
+    pcb_ptr = (pcb_t*)(esp & PCB_MASK);
     file_desc = pcb_ptr -> files[fd];
     
     file_desc.fops = NULL;
     file_desc.inode = NULL;
     file_desc.pos = 0;
     file_desc.flags = DEAD;
+
+    return 0;
 }
 
 int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }

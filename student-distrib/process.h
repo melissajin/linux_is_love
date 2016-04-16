@@ -5,10 +5,12 @@
 #include "types.h"
 
 #define FILE_ARRAY_LEN	8
+#define PCB_MASK        0xFFFFE000
 
 typedef struct {
     fops_t * fops;
     inode_t * inode;
+    uint32_t inode_num;
     uint32_t pos;
     uint32_t flags;
 } fd_t;
@@ -46,6 +48,13 @@ do {                        \
         "movl %%ebp, %0"    \
         : "=rm" (x)         \
     );                      \
+} while(0)
+
+#define pcb(x)                          \
+do {                                    \
+    uint32_t esp;                       \
+    get_esp(esp);                       \
+    x = (pcb_t *) (esp & PCB_MASK);     \
 } while(0)
 
 #endif /* _PROCESS_H */
