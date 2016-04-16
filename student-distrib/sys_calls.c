@@ -227,6 +227,9 @@ int32_t open (const uint8_t* filename){
         fd_ptr -> inode = NULL;
         fd_ptr -> inode_num = 0;
         fd_ptr -> flags = LIVE;
+
+        fd_ptr -> fops -> open(filename);
+        
         return fd;
     }
 
@@ -240,6 +243,8 @@ int32_t open (const uint8_t* filename){
     fd_ptr -> flags = LIVE;
     fd_ptr -> pos = 0;
 	
+    fd_ptr -> fops -> open(filename);
+
  	return fd;
 }
 
