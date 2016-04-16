@@ -18,7 +18,6 @@
 #define ELF_MAGIC       0x464c457f
 #define ELF_ADDR_OFFS   24
 
-#define MAX_ARGS        1024
 #define TERM_NAME       "term"
 #define WORD_SIZE       4
 
@@ -63,7 +62,8 @@ int32_t halt (uint8_t status) {
 
 int32_t execute (const uint8_t* command) {
     int8_t retval;
-    uint8_t* args[MAX_ARGS];
+    uint8_t command_buf[ARGS_MAX];
+    uint8_t* args[ARGS_MAX];
     uint8_t buf[ELF_HEADER_LEN];
     dentry_t dentry;
     uint32_t addr;
@@ -82,6 +82,7 @@ int32_t execute (const uint8_t* command) {
     if(pid < 0)
         return -1;
 
+    memcpy(command_buf, command, strlen((int8_t *) command));
     parse_arg(command, (uint8_t**)args);
 
     /* check for valid executable */
@@ -127,7 +128,10 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;        
+        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;
+
+        pcb -> args_len = strlen((int8_t *) command_buf);
+        memcpy(pcb -> args, command_buf, pcb -> args_len);
 
         /* saving values in tss to return to process kernel stack */
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
@@ -264,21 +268,33 @@ int32_t close (int32_t fd){
     file_desc.pos = 0;
     file_desc.flags = DEAD;
 
+int32_t getargs (uint8_t* buf, int32_t nbytes){
+    uint32_t esp;
+    pcb_t * pcb_ptr;
+
+    get_esp(esp);
+    pcb_ptr = (pcb_t * ) (esp & ESP_MASK);
+
+    if(nbytes < (pcb_ptr -> args_len + 1)) return -1;
+
+    memcpy(buf, pcb_ptr -> args, pcb_ptr -> args_len);
+    buf[pcb_ptr -> args_len + 1] = '\0';
+
     return 0;
 }
 
-int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }
 int32_t vidmap (uint8_t** screen_start){ return -1; }
+
 int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
 int32_t sigreturn (void){ return -1; }
 
 /* taken from given syscall material for now */
 void parse_arg(const uint8_t* command, uint8_t** args){
-	uint8_t buf[MAX_ARGS + 2];
+	uint8_t buf[ARGS_MAX + 2];
     uint8_t* scan;
     uint32_t n_arg;
 
-    if (MAX_ARGS - 1 < strlen((int8_t*)command))
+    if (ARGS_MAX - 1 < strlen((int8_t*)command))
     	return ;
     strcpy((int8_t*)buf, (int8_t*)command);
     for (scan = buf; '\0' != *scan && ' ' != *scan && '\n' != *scan; scan++);
