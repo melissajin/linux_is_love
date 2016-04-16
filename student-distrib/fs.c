@@ -218,9 +218,16 @@ inode_t * get_inode_ptr(uint32_t inode) {
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	int32_t bytes_read;
+ 	uint32_t esp;
+    pcb_t * pcb;
+    fd_t fs_fd;
 
- 	bytes_read = read_data(fd.inode, fd.pos, buf, nbytes);
- 	fd.pos = bytes_read;
+ 	get_esp(esp);
+    pcb = (pcb_t *) (esp & ESP_MASK);
+    fs_fd = pcb -> files[fd];
+    
+ 	bytes_read = read_data(fs_fd.inode, fs_fd.pos, buf, nbytes);
+ 	fs_fd.pos = bytes_read;
  	return bytes_read;
  }
 

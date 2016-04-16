@@ -243,13 +243,20 @@ int32_t open (const uint8_t* filename){
 }
 
 int32_t close (int32_t fd){ 
+    uint32_t esp;
+    pcb_t* pcb_ptr;
+    fd_t file_desc;
 
     if(fd < 2 || fd > 7) return -1; 
 
-    fd.fops = NULL;
-    fd.inode = NULL;
-    fd.pos = 0;
-    fd.flags = DEAD;
+    get_esp(esp);
+    pcb_ptr = (pcb_t*)(esp & ESP_MASK);
+    file_desc = pcb_ptr -> files[fd];
+    
+    file_desc.fops = NULL;
+    file_desc.inode = NULL;
+    file_desc.pos = 0;
+    file_desc.flags = DEAD;
 }
 
 int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }
