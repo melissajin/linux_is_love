@@ -268,12 +268,15 @@ int32_t close (int32_t fd){
     file_desc.pos = 0;
     file_desc.flags = DEAD;
 
+    return 0;
+}
+
 int32_t getargs (uint8_t* buf, int32_t nbytes){
     uint32_t esp;
     pcb_t * pcb_ptr;
 
     get_esp(esp);
-    pcb_ptr = (pcb_t * ) (esp & ESP_MASK);
+    pcb_ptr = (pcb_t * ) (esp & PCB_MASK);
 
     if(nbytes < (pcb_ptr -> args_len + 1)) return -1;
 
