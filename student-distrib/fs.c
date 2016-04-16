@@ -9,6 +9,7 @@ static int32_t fs_open (const uint8_t* filename);
 static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
+static num_dir_reads = 0;
 
 static fops_t fs_fops = {
 	.read = fs_read,
@@ -92,8 +93,9 @@ static fops_t fs_fops = {
  	inode_t *curr_inode;
  	bytes_read = 0;
 	
-	if(inode == DIRECTORY_INODE){
-		bytes_read = read_directory(offset, buf, length);
+	if(inode == DIRECTORY_INODE && num_dir_reads < bootblock.dir_entries_cnt){
+		bytes_read = read_directory_entry(num_dir_reads, buf, length);
+		num_dir_reads++;
 	}
 	
  	else if(inode > DIRECTORY_INODE  && inode < bootblock->inode_cnt){
@@ -159,6 +161,36 @@ static fops_t fs_fops = {
 	return ret_val;
 }
 
+
+ /* read_directory_entry
+ *	  DESCRIPTION: copies over 'length' bytes of directory entries into 'buf'
+ *    INPUTS: entry - directory entry to copy over
+ *			  buf - buffer to be filled by the bytes read from the file
+ *			  length - number of bytes to read
+ *    OUTPUTS: none
+ *    RETURN VALUE: number of bytes read and placed in the buffer
+ *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
+ *					the file
+ */
+ uint32_t read_directory_entry(uint32_t entry, uint8_t* buf, uint32_t length){
+ 	uint32_t i;
+ 	uint32_t buf_idx = 0;
+	uint32_t ret_val = 0;
+	dentry_t dentry;
+
+	read_dentry_by_index(k, &dentry);
+	for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
+		if(ret_val < length){
+			buf[buf_idx++] = dentry.fname[i]; 
+			ret_val++;
+		}
+	}
+	buf[buf_idx++]= '\n';
+	
+	buf[buf_idx] = '\0';
+	return ret_val;
+}
+
  /* load
  *	  DESCRIPTION: loads contents of the file 'fname' into memory at address 'addr'
  *    INPUTS: fname - filename specifying the file to read from
@@ -185,7 +217,11 @@ inode_t * get_inode_ptr(uint32_t inode) {
 }
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
- 	return -1;
+ 	int32_t bytes_read;
+
+ 	bytes_read = read_data(fd.inode, fd.pos, buf, nbytes);
+ 	fd.pos = bytes_read;
+ 	return bytes_read;
  }
 
  int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes){ 

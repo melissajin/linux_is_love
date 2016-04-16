@@ -242,7 +242,16 @@ int32_t open (const uint8_t* filename){
  	return fd;
 }
 
-int32_t close (int32_t fd){ return -1; }
+int32_t close (int32_t fd){ 
+
+    if(fd < 2 || fd > 7) return -1; 
+
+    fd.fops = NULL;
+    fd.inode = NULL;
+    fd.pos = 0;
+    fd.flags = DEAD;
+}
+
 int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }
 int32_t vidmap (uint8_t** screen_start){ return -1; }
 int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
