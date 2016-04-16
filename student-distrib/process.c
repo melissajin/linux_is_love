@@ -10,10 +10,16 @@ typedef struct {
 } dev_t;
 
 static int32_t procs[MAX_PROCESSES + 1] = {0};
-
 static dev_t devices[MAX_DEVICES];
 static int num_devices = 0;
 
+/* add_device
+ *	  DESCRIPTION: 
+ *    INPUTS: 
+ *    OUTPUTS: none
+ *    RETURN VALUE:
+ *    SIDE EFFECTS: 
+ */
 int add_device(uint8_t * name, fops_t * fops) {
 	if(num_devices == MAX_DEVICES) return -1;
 
@@ -23,6 +29,13 @@ int add_device(uint8_t * name, fops_t * fops) {
 	return 0;
 }
 
+/* get_device_fops
+ *	  DESCRIPTION: 
+ *    INPUTS: 
+ *    OUTPUTS: none
+ *    RETURN VALUE:
+ *    SIDE EFFECTS: 
+ */
 fops_t * get_device_fops(const uint8_t * req_name) {
 	int i;
 	uint8_t * dev_name;
@@ -36,6 +49,13 @@ fops_t * get_device_fops(const uint8_t * req_name) {
 	return NULL;
 }
 
+/* add_process
+ *	  DESCRIPTION: adds a process in a PCB
+ *    INPUTS: none
+ *    OUTPUTS: none
+ *    RETURN VALUE: process number or -1 on failure
+ *    SIDE EFFECTS: changes procs bitmap to show added process
+ */
 int32_t add_process(){
 	uint32_t i;
 	for(i = 1; i < MAX_PROCESSES + 1; i++){
@@ -47,10 +67,17 @@ int32_t add_process(){
 	return -1;
 }
 
-int32_t delete_process(int32_t pid){
-	if(pid < 0 || pid >= MAX_PROCESSES){
+/* delete_process
+ *	  DESCRIPTION: deletes a process in the PCB corresponding the the fd
+ *    INPUTS: fd
+ *    OUTPUTS: none
+ *    RETURN VALUE: 0 on success, -1 on failure
+ *    SIDE EFFECTS: changes the procs bitmap to show deleted process
+ */
+int32_t delete_process(int32_t fd){
+	if(fd < 0 || fd >= MAX_PROCESSES){
 		return -1;
 	}
-	procs[pid] = 0;
+	procs[fd] = 0;
 	return 0;
 }
