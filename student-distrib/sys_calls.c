@@ -10,15 +10,12 @@
 #define KERNEL_MEM_END  0x800000
 #define SPACE_4MB       0x400000
 #define PCB_SIZE        0x2000
-#define LIVE            0x1
-#define DEAD            0x0
 #define START_EXE_ADDR  0x08048000
 
 #define ELF_HEADER_LEN  40
 #define ELF_MAGIC       0x464c457f
 #define ELF_ADDR_OFFS   24
 
-#define MAX_ARGS        1024
 #define TERM_NAME       "term"
 #define WORD_SIZE       4
 
@@ -34,7 +31,8 @@ int32_t halt (uint8_t status) {
     pcb_child_ptr = (pcb_t *) (esp & PCB_MASK);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
-    unmap_large_page(PROG_VM_START);
+    unmap_pde(PROG_VM_START);
+    unmap_pde(PROG_VIDMEM_ADDR);
     if(pcb_parent_ptr != NULL) {
         map_large_page(PROG_VM_START, KERNEL_MEM_END + pcb_parent_ptr -> pid * SPACE_4MB);
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
@@ -62,8 +60,9 @@ int32_t halt (uint8_t status) {
 }
 
 int32_t execute (const uint8_t* command) {
-    int8_t retval;
-    uint8_t* args[MAX_ARGS];
+    int8_t retval = 0;
+    uint8_t command_buf[ARGS_MAX];
+    uint8_t* args[ARGS_MAX];
     uint8_t buf[ELF_HEADER_LEN];
     dentry_t dentry;
     uint32_t addr;
@@ -83,6 +82,11 @@ int32_t execute (const uint8_t* command) {
         return -1;
 
     parse_arg(command, (uint8_t**)args);
+    int32_t cmd_len = strlen((int8_t *) args[0]);
+    if(args[1] != '\0') {
+        cmd_len++;
+    }
+    memcpy(command_buf, command + cmd_len, strlen((int8_t *) command) - cmd_len + 1);
 
     /* check for valid executable */
     if(-1 == read_dentry_by_name(args[0], &dentry))
@@ -108,13 +112,13 @@ int32_t execute (const uint8_t* command) {
         stdin.fops = term_fops;
         stdin.inode = NULL;
         stdin.pos = 0;
-        stdin.flags = LIVE;
+        stdin.flags = FD_LIVE;
         pcb->files[0] = stdin;
 
         stdout.fops = term_fops;
         stdout.inode = NULL;
         stdout.pos = 0;
-        stdout.flags = LIVE;
+        stdout.flags = FD_LIVE;
         pcb->files[1] = stdout;
 
         /* initialize the rest of the file descriptor entries */
@@ -122,12 +126,15 @@ int32_t execute (const uint8_t* command) {
             fd.fops = NULL;
             fd.inode = NULL;
             fd.pos = 0;
-            fd.flags = DEAD;
+            fd.flags = 0;
             pcb->files[i] = fd;
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;        
+        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;
+
+        pcb -> args_len = strlen((int8_t *) command_buf);
+        memcpy(pcb -> args, command_buf, pcb -> args_len);
 
         /* saving values in tss to return to process kernel stack */
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
@@ -209,7 +216,7 @@ int32_t open (const uint8_t* filename){
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
     for(i = 2; i < FILE_ARRAY_LEN ; i++){
-        if(pcb_ptr->files[i].flags == DEAD){
+        if(pcb_ptr->files[i].flags == 0){
             fd = i;
             break;
         }
@@ -226,7 +233,10 @@ int32_t open (const uint8_t* filename){
         fd_ptr -> fops = fops;
         fd_ptr -> inode = NULL;
         fd_ptr -> inode_num = 0;
-        fd_ptr -> flags = LIVE;
+        fd_ptr -> flags = FD_LIVE;
+
+        fd_ptr -> fops -> open(filename);
+        
         return fd;
     }
 
@@ -237,43 +247,76 @@ int32_t open (const uint8_t* filename){
     fd_ptr -> fops = get_device_fops((uint8_t *) FS_DEV_NAME);
     fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
     fd_ptr -> inode_num = temp_dentry.inode;
-    fd_ptr -> flags = LIVE;
+    fd_ptr -> flags = FD_LIVE;
     fd_ptr -> pos = 0;
+
+    if(temp_dentry.ftype == DIR_FTYPE) {
+        fd_ptr -> flags |= FD_DIR;
+    }
 	
+    fd_ptr -> fops -> open(filename);
+
  	return fd;
 }
 
 int32_t close (int32_t fd){ 
     uint32_t esp;
     pcb_t* pcb_ptr;
-    fd_t file_desc;
+    fd_t * file_desc;
 
-    if(fd < 2 || fd > 7) return -1; 
+    /* prevent closing stdin or stdout */
+    if(fd < 2 || fd >= FILE_ARRAY_LEN) return -1; 
 
     get_esp(esp);
     pcb_ptr = (pcb_t*)(esp & PCB_MASK);
-    file_desc = pcb_ptr -> files[fd];
+    file_desc = &(pcb_ptr -> files[fd]);
+
+    file_desc -> fops -> close(fd);
     
-    file_desc.fops = NULL;
-    file_desc.inode = NULL;
-    file_desc.pos = 0;
-    file_desc.flags = DEAD;
+    file_desc -> fops = NULL;
+    file_desc -> inode = NULL;
+    file_desc -> pos = 0;
+    file_desc -> flags = 0;
 
     return 0;
 }
 
-int32_t getargs (uint8_t* buf, int32_t nbytes){ return -1; }
-int32_t vidmap (uint8_t** screen_start){ return -1; }
+int32_t getargs (uint8_t* buf, int32_t nbytes){
+    uint32_t esp;
+    pcb_t * pcb_ptr;
+
+    get_esp(esp);
+    pcb_ptr = (pcb_t * ) (esp & PCB_MASK);
+
+    if(nbytes < (pcb_ptr -> args_len + 1)) return -1;
+
+    memcpy(buf, pcb_ptr -> args, pcb_ptr -> args_len);
+    buf[pcb_ptr -> args_len] = '\0';
+
+    return 0;
+}
+
+int32_t vidmap (uint8_t** screen_start){
+    if(((int32_t) screen_start < PROG_VM_START) || ((int32_t) screen_start >= PROG_VM_START + SPACE_4MB))
+        return -1;
+
+    *screen_start = (uint8_t *) PROG_VIDMEM_ADDR;
+
+    set_pde_present(PROG_VIDMEM_ADDR);
+
+    return PROG_VIDMEM_ADDR;
+}
+
 int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
 int32_t sigreturn (void){ return -1; }
 
 /* taken from given syscall material for now */
 void parse_arg(const uint8_t* command, uint8_t** args){
-	uint8_t buf[MAX_ARGS + 2];
+	uint8_t buf[ARGS_MAX + 2];
     uint8_t* scan;
     uint32_t n_arg;
 
-    if (MAX_ARGS - 1 < strlen((int8_t*)command))
+    if (ARGS_MAX - 1 < strlen((int8_t*)command))
     	return ;
     strcpy((int8_t*)buf, (int8_t*)command);
     for (scan = buf; '\0' != *scan && ' ' != *scan && '\n' != *scan; scan++);

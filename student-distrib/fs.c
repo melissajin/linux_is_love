@@ -9,7 +9,6 @@ static int32_t fs_open (const uint8_t* filename);
 static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
-static int32_t num_dir_reads = 0;
 
 static fops_t fs_fops = {
 	.read = fs_read,
@@ -92,13 +91,10 @@ static fops_t fs_fops = {
  	int32_t new_offset; // offset once inside correct data block
  	inode_t *curr_inode;
  	bytes_read = 0;
+
+	// bytes_read = read_directory_entry(offset, buf, length);
 	
-	if(inode == DIRECTORY_INODE && num_dir_reads < bootblock -> dir_entries_cnt){
-		bytes_read = read_directory_entry(num_dir_reads, buf, length);
-		num_dir_reads++;
-	}
-	
- 	else if(inode > DIRECTORY_INODE  && inode < bootblock->inode_cnt){
+ 	if(inode < bootblock->inode_cnt){
 
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
@@ -172,13 +168,16 @@ static fops_t fs_fops = {
  *    SIDE EFFECTS: fills the first arg (buf) with the bytes read from
  *					the file
  */
- uint32_t read_directory_entry(uint32_t entry, uint8_t* buf, uint32_t length){
+ uint32_t read_directory_entry(uint32_t dir_entry, uint8_t* buf, uint32_t length){
  	uint32_t i;
  	uint32_t buf_idx = 0;
 	uint32_t ret_val = 0;
 	dentry_t dentry;
+	
+	if(dir_entry >= bootblock -> dir_entries_cnt) return 0;
 
-	read_dentry_by_index(entry, &dentry);
+	read_dentry_by_index(dir_entry, &dentry);
+
 	for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
 		if(ret_val < length){
 			buf[buf_idx++] = dentry.fname[i]; 
@@ -186,8 +185,8 @@ static fops_t fs_fops = {
 		}
 	}
 	buf[buf_idx++]= '\n';
-	
 	buf[buf_idx] = '\0';
+
 	return ret_val;
 }
 
@@ -219,13 +218,18 @@ inode_t * get_inode_ptr(uint32_t inode) {
 int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
 	int32_t bytes_read;
 	pcb_t * pcb;
-	fd_t fs_fd;
+	fd_t * fs_fd;
 
 	pcb(pcb);
-	fs_fd = pcb -> files[fd];
+	fs_fd = &(pcb -> files[fd]);
 
-	bytes_read = read_data(fs_fd.inode_num, fs_fd.pos, buf, nbytes);
-	fs_fd.pos = bytes_read;
+	if(fs_fd -> flags & FD_DIR) {
+		bytes_read = read_directory_entry(fs_fd -> pos, buf, nbytes);
+		fs_fd -> pos++;
+	} else {
+		bytes_read = read_data(fs_fd -> inode_num, fs_fd -> pos, buf, nbytes);
+		fs_fd -> pos += bytes_read;
+	}
 	return bytes_read;
 }
 

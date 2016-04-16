@@ -4,8 +4,15 @@
 #include "fs.h"
 #include "types.h"
 
+#define PROG_VIDMEM_ADDR 0x8400000
+
 #define FILE_ARRAY_LEN	8
 #define PCB_MASK        0xFFFFE000
+#define ARGS_MAX        128
+
+/* fd flags */
+#define FD_LIVE            0x1
+#define FD_DIR             0x2
 
 typedef struct {
     fops_t * fops;
@@ -21,6 +28,8 @@ typedef struct {
 
 typedef struct pcb {
 	fd_t files[FILE_ARRAY_LEN];
+    uint8_t args[ARGS_MAX];
+    uint32_t args_len;
 	int32_t pid;
 	struct pcb* parent_pcb;
     regs_t regs;

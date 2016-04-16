@@ -9,7 +9,8 @@ typedef struct {
 	fops_t * fops;
 } dev_t;
 
-static int32_t procs[MAX_PROCESSES + 1] = {0};
+static int32_t procs[MAX_PROCESSES] = {0};
+
 static dev_t devices[MAX_DEVICES];
 static int num_devices = 0;
 
@@ -58,10 +59,10 @@ fops_t * get_device_fops(const uint8_t * req_name) {
  */
 int32_t add_process(){
 	uint32_t i;
-	for(i = 1; i < MAX_PROCESSES + 1; i++){
+	for(i = 0; i < MAX_PROCESSES; i++){
 		if(procs[i] == 0){
 			procs[i] = 1;
-			return i;
+			return i + 1;
 		}
 	}
 	return -1;
@@ -74,10 +75,11 @@ int32_t add_process(){
  *    RETURN VALUE: 0 on success, -1 on failure
  *    SIDE EFFECTS: changes the procs bitmap to show deleted process
  */
-int32_t delete_process(int32_t fd){
-	if(fd < 0 || fd >= MAX_PROCESSES){
+int32_t delete_process(int32_t pid){
+	pid--;
+	if(pid < 0 || pid >= MAX_PROCESSES){
 		return -1;
 	}
-	procs[fd] = 0;
+	procs[pid] = 0;
 	return 0;
 }

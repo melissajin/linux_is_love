@@ -50,6 +50,12 @@ handle:
 	iret
 
 handle_syscall:		#similar functionality as above except for system calls
+	/* test validity of syscall number */
+	cmpl	$1, %eax
+	jb		handle_syscall_error
+	cmpl	$10, %eax
+	ja		handle_syscall_error
+
 	/* save regs */
 	pushl	%ebx
 	pushl	%ecx
@@ -77,7 +83,11 @@ handle_syscall:		#similar functionality as above except for system calls
 	popl	%ecx
 	popl	%ebx
 
+handle_syscall_iret:
 	iret
+handle_syscall_error:
+	movl	$-1, %eax
+	jmp		handle_syscall_iret
 
 isr0:
 	cli
