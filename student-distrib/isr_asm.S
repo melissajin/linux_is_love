@@ -1,3 +1,6 @@
+#define USER_CS 0x0023
+#define USER_DS 0x002B
+
 .text
 
 .global isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7 //provides all the assembly linkages to be called by c functions
@@ -11,6 +14,12 @@
 .extern sys_call_handler	#assembly linkage for sys calls
 .extern keyboard_handler_main	#assembly linkage for keyboard
 .extern rtc_handler_main	#assembly linkage for rtc
+.extern halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn #system calls
+
+
+sys_table:
+	.long halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
+
 
 handle:
 	pusha
@@ -31,26 +40,43 @@ handle:
 	call	fault_handler
 
 	popl	%eax		#restoring all our registers
-	pop	%gs
-	pop	%fs
-	pop	%es
-	pop	%ds
+	pop		%gs
+	pop		%fs
+	pop		%es
+	pop		%ds
 	popa
 
 	add		$8, %esp #clearing stack
 	iret
 
 handle_syscall:		#similar functionality as above except for system calls
-	pusha
-	movl	%esp, %eax
-	pushl	%eax
+	/* save regs */
+	pushl	%ebx
+	pushl	%ecx
+	pushl	%edx
+	pushl	%esi
+	pushl	%edi
 
-	call	fault_handler
+	/* push args */
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
 
-	popl	%eax
-	popa
+	decl	%eax	/* correct numbering 1-10 to 0-9 */
+	call	*sys_table(,%eax, 4)
 
-	add		$8, %esp
+	/* pop args */
+	popl	%ebx
+	popl	%ecx
+	popl	%edx
+	
+	/* restore regs */
+	popl	%edi
+	popl	%esi
+	popl	%edx
+	popl	%ecx
+	popl	%ebx
+
 	iret
 
 isr0:
@@ -240,7 +266,7 @@ isr31:
 
 kybd_isr:		#A handler/assembly linkage for the keyboard just saves state of machine
 	cli
-	pusha		
+	pusha
 	call keyboard_handler_main
 	popa
 	iret
@@ -253,6 +279,7 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 	iret
 
 sys_call:		#preparing argument for handle_syscall
-	cli
-	pushl %eax
+	sti
 	jmp handle_syscall
+
+.end

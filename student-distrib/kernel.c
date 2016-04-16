@@ -12,7 +12,8 @@
 #include "virtualmem.h"
 #include "isr.h"
 #include "fs.h"
-#include "test/test.h"
+#include "sys_calls.h"
+#include "process.h"
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -176,9 +177,12 @@ entry (unsigned long magic, unsigned long addr)
 	printf("Enabling Interrupts\n");
 	sti();
 
-	test();
-
 	/* Execute the first program (`shell') ... */
+	proc_count = 0;
+	while(1) {
+		clear();
+		execute((uint8_t *) "shell");
+	}
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");

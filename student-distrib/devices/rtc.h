@@ -14,17 +14,4 @@ void rtc_init();
 /* rtc interrupt handler */
 void rtc_handler_main();
 
-/* replace these with fops struct later */
-/* open rtc */
-int32_t rtc_open(const uint8_t * filename);
-
-/* wait until next rtc interrupt */
-int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes);
-
-/* change rtc frequency */
-int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes);
-
-/* close rtc */
-int32_t rtc_close(int32_t fd);
-
 #endif

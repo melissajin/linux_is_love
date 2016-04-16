@@ -132,12 +132,12 @@ void isrs_install(){
  *SIDE EFFECT: Spins indefinately at aka and blue screens
  */
 void fault_handler(struct regs * r){
-	clear();
 	if(r -> int_no < 32)
 	{
 		printf("Exception %d: ", r -> int_no);
 		printf(exception_messages[r -> int_no]);
 		printf("\n");
+		printf("Code: %d\n", r -> err_code);
 	}
 	else
 	{

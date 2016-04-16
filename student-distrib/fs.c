@@ -1,11 +1,27 @@
-
 #include "fs.h"
+#include "process.h"
+
+#define DEV_NAME FS_DEV_NAME
+
+static int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
+static int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
+static int32_t fs_open (const uint8_t* filename);
+static int32_t fs_close (int32_t fd);
 
 static bootblock_t* bootblock;
+
+static fops_t fs_fops = {
+	.read = fs_read,
+	.write = fs_write,
+	.open = fs_open,
+	.close = fs_close
+};
  
  /* Initialize filesystem */
  void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
+
+	add_device((uint8_t *) DEV_NAME, &fs_fops);
  }
 
 /* read_dentry_by_name
@@ -141,6 +157,31 @@ static bootblock_t* bootblock;
 	
 	buf[buf_idx] = '\0';
 	return ret_val;
+}
+
+ /* load
+ *	  DESCRIPTION: loads contents of the file 'fname' into memory at address 'addr'
+ *    INPUTS: fname - filename specifying the file to read from
+ 			  addr - address to copy contents of file to
+ *    OUTPUTS: none
+ *    RETURN VALUE: 0 on success, -1 on failure
+ *    SIDE EFFECTS: copies contents of the specified file into the memoy
+ *					address.
+ */
+int32_t load(dentry_t * d, uint8_t * mem) {
+	uint32_t len;
+	inode_t * curr_inode;
+
+	if(d == NULL || mem == NULL) return -1;
+
+	curr_inode = (inode_t*)((uint8_t*) bootblock + ((d -> inode+1) * BLOCK_SIZE));
+	len = curr_inode -> length;
+	read_data(d -> inode, 0, mem, len);
+	return 0;
+}
+
+inode_t * get_inode_ptr(uint32_t inode) {
+	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
 }
 
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
