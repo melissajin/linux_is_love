@@ -1,6 +1,7 @@
 #include "isr.h"
 #include "lib.h"
 #include "idt_set.h"
+#include "sys_calls.h"
 
 struct regs
 {
@@ -132,19 +133,12 @@ void isrs_install(){
  *SIDE EFFECT: Spins indefinately at aka and blue screens
  */
 void fault_handler(struct regs * r){
-	if(r -> int_no < 32)
-	{
-		printf("Exception %d: ", r -> int_no);
-		printf(exception_messages[r -> int_no]);
-		printf("\n");
-		printf("Code: %d\n", r -> err_code);
-	}
-	else
-	{
-		printf("Unknown exception %d\n", r -> int_no);
-	}
+	printf("Process terminated with exception %d: %s (%d)\n",
+		r -> int_no,
+		exception_messages[r -> int_no],
+		r -> err_code);
 
-	while(1);
+	halt(1);
 }
 
 /*sys_call_handler
