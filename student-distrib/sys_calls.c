@@ -60,7 +60,7 @@ int32_t halt (uint8_t status) {
 }
 
 int32_t execute (const uint8_t* command) {
-    int8_t retval;
+    int8_t retval = 0;
     uint8_t command_buf[ARGS_MAX];
     uint8_t* args[ARGS_MAX];
     uint8_t buf[ELF_HEADER_LEN];
@@ -270,6 +270,8 @@ int32_t close (int32_t fd){
     get_esp(esp);
     pcb_ptr = (pcb_t*)(esp & PCB_MASK);
     file_desc = &(pcb_ptr -> files[fd]);
+
+    file_desc -> fops -> close(fd);
     
     file_desc -> fops = NULL;
     file_desc -> inode = NULL;
