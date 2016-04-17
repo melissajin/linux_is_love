@@ -31,7 +31,8 @@ int32_t halt (uint8_t status) {
     pcb_child_ptr = (pcb_t *) (esp & PCB_MASK);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
-    unmap_large_page(PROG_VM_START);
+    unmap_pde(PROG_VM_START);
+    unmap_pde(PROG_VIDMEM_ADDR);
     if(pcb_parent_ptr != NULL) {
         map_large_page(PROG_VM_START, KERNEL_MEM_END + pcb_parent_ptr -> pid * SPACE_4MB);
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
@@ -263,7 +264,8 @@ int32_t close (int32_t fd){
     pcb_t* pcb_ptr;
     fd_t * file_desc;
 
-    if(fd < 2 || fd > 7) return -1; 
+    /* prevent closing stdin or stdout */
+    if(fd < 2 || fd >= FILE_ARRAY_LEN) return -1; 
 
     get_esp(esp);
     pcb_ptr = (pcb_t*)(esp & PCB_MASK);
@@ -292,7 +294,16 @@ int32_t getargs (uint8_t* buf, int32_t nbytes){
     return 0;
 }
 
-int32_t vidmap (uint8_t** screen_start){ return -1; }
+int32_t vidmap (uint8_t** screen_start){
+    if(((int32_t) screen_start < PROG_VM_START) || ((int32_t) screen_start >= PROG_VM_START + SPACE_4MB))
+        return -1;
+
+    *screen_start = (uint8_t *) PROG_VIDMEM_ADDR;
+
+    set_pde_present(PROG_VIDMEM_ADDR);
+
+    return PROG_VIDMEM_ADDR;
+}
 
 int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
 int32_t sigreturn (void){ return -1; }

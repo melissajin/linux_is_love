@@ -4,6 +4,8 @@
 #include "fs.h"
 #include "types.h"
 
+#define PROG_VIDMEM_ADDR 0x8400000
+
 #define FILE_ARRAY_LEN	8
 #define PCB_MASK        0xFFFFE000
 #define ARGS_MAX        128
