@@ -10,8 +10,6 @@
 #define KERNEL_MEM_END  0x800000
 #define SPACE_4MB       0x400000
 #define PCB_SIZE        0x2000
-#define LIVE            0x1
-#define DEAD            0x0
 #define START_EXE_ADDR  0x08048000
 
 #define ELF_HEADER_LEN  40
@@ -113,13 +111,13 @@ int32_t execute (const uint8_t* command) {
         stdin.fops = term_fops;
         stdin.inode = NULL;
         stdin.pos = 0;
-        stdin.flags = LIVE;
+        stdin.flags = FD_LIVE;
         pcb->files[0] = stdin;
 
         stdout.fops = term_fops;
         stdout.inode = NULL;
         stdout.pos = 0;
-        stdout.flags = LIVE;
+        stdout.flags = FD_LIVE;
         pcb->files[1] = stdout;
 
         /* initialize the rest of the file descriptor entries */
@@ -127,7 +125,7 @@ int32_t execute (const uint8_t* command) {
             fd.fops = NULL;
             fd.inode = NULL;
             fd.pos = 0;
-            fd.flags = DEAD;
+            fd.flags = 0;
             pcb->files[i] = fd;
         }
 
@@ -217,7 +215,7 @@ int32_t open (const uint8_t* filename){
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
     for(i = 2; i < FILE_ARRAY_LEN ; i++){
-        if(pcb_ptr->files[i].flags == DEAD){
+        if(pcb_ptr->files[i].flags == 0){
             fd = i;
             break;
         }
@@ -234,7 +232,7 @@ int32_t open (const uint8_t* filename){
         fd_ptr -> fops = fops;
         fd_ptr -> inode = NULL;
         fd_ptr -> inode_num = 0;
-        fd_ptr -> flags = LIVE;
+        fd_ptr -> flags = FD_LIVE;
 
         fd_ptr -> fops -> open(filename);
         
@@ -248,8 +246,12 @@ int32_t open (const uint8_t* filename){
     fd_ptr -> fops = get_device_fops((uint8_t *) FS_DEV_NAME);
     fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
     fd_ptr -> inode_num = temp_dentry.inode;
-    fd_ptr -> flags = LIVE;
+    fd_ptr -> flags = FD_LIVE;
     fd_ptr -> pos = 0;
+
+    if(temp_dentry.ftype == DIR_FTYPE) {
+        fd_ptr -> flags |= FD_DIR;
+    }
 	
     fd_ptr -> fops -> open(filename);
 
@@ -270,7 +272,7 @@ int32_t close (int32_t fd){
     file_desc -> fops = NULL;
     file_desc -> inode = NULL;
     file_desc -> pos = 0;
-    file_desc -> flags = DEAD;
+    file_desc -> flags = 0;
 
     return 0;
 }

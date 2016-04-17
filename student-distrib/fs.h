@@ -16,7 +16,8 @@
 #define FNAME_LEN 32
 #define BYTES_DENTRY 64
 #define MAX_DIR_ENTRY_CHARS (16*33)
-#define DIRECTORY_INODE 0
+#define DIR_FTYPE	1
+#define FILE_FTYPE	2
 #define FS_DEV_NAME "fs"
 
 typedef struct dentry {

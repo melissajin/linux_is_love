@@ -92,11 +92,9 @@ static fops_t fs_fops = {
  	inode_t *curr_inode;
  	bytes_read = 0;
 
-	if(inode == DIRECTORY_INODE){
-		bytes_read = read_directory_entry(offset, buf, length);
-	}
+	// bytes_read = read_directory_entry(offset, buf, length);
 	
- 	else if(inode > DIRECTORY_INODE  && inode < bootblock->inode_cnt){
+ 	if(inode < bootblock->inode_cnt){
 
  	// calculate correct data block and offset to start copying from
 	new_offset = offset % CHARS_PER_BLOCK;
@@ -179,6 +177,7 @@ static fops_t fs_fops = {
 	if(dir_entry >= bootblock -> dir_entries_cnt) return 0;
 
 	read_dentry_by_index(dir_entry, &dentry);
+
 	for(i = 0; i < strlen((int8_t*)dentry.fname); i++){
 		if(ret_val < length){
 			buf[buf_idx++] = dentry.fname[i]; 
@@ -224,11 +223,12 @@ int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
 	pcb(pcb);
 	fs_fd = &(pcb -> files[fd]);
 
-	bytes_read = read_data(fs_fd -> inode_num, fs_fd -> pos, buf, nbytes);
-	if(fs_fd -> inode_num == DIRECTORY_INODE) {
+	if(fs_fd -> flags & FD_DIR) {
+		bytes_read = read_directory_entry(fs_fd -> pos, buf, nbytes);
 		fs_fd -> pos++;
 	} else {
-		fs_fd -> pos = bytes_read;
+		bytes_read = read_data(fs_fd -> inode_num, fs_fd -> pos, buf, nbytes);
+		fs_fd -> pos += bytes_read;
 	}
 	return bytes_read;
 }
