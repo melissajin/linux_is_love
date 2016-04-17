@@ -16,6 +16,6 @@ int32_t set_handler (int32_t signum, void* handler_address);
 int32_t sigreturn (void);
 
 /* helper function to parse args for execute */
-void parse_arg(const uint8_t* command, uint8_t** args);
+void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t * arg_buf);
 
 #endif /* _SYS_CALLS_H */

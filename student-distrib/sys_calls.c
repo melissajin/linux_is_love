@@ -62,7 +62,7 @@ int32_t halt (uint8_t status) {
 int32_t execute (const uint8_t* command) {
     int8_t retval = 0;
     uint8_t command_buf[ARGS_MAX];
-    uint8_t* args[ARGS_MAX];
+    uint8_t args[ARGS_MAX];
     uint8_t buf[ELF_HEADER_LEN];
     dentry_t dentry;
     uint32_t addr;
@@ -81,15 +81,10 @@ int32_t execute (const uint8_t* command) {
     if(pid < 0)
         return -1;
 
-    parse_arg(command, (uint8_t**)args);
-    int32_t cmd_len = strlen((int8_t *) args[0]);
-    if(args[1] != '\0') {
-        cmd_len++;
-    }
-    memcpy(command_buf, command + cmd_len, strlen((int8_t *) command) - cmd_len + 1);
+    parse_arg(command, command_buf, args);
 
     /* check for valid executable */
-    if(-1 == read_dentry_by_name(args[0], &dentry))
+    if(-1 == read_dentry_by_name(command_buf, &dentry))
 		return -1; 
 	if(read_data(dentry.inode, 0, buf, ELF_HEADER_LEN) < ELF_HEADER_LEN)
 		return -1;
@@ -133,8 +128,8 @@ int32_t execute (const uint8_t* command) {
         pcb->pid = pid;
         pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;
 
-        pcb -> args_len = strlen((int8_t *) command_buf);
-        memcpy(pcb -> args, command_buf, pcb -> args_len);
+        pcb -> args_len = strlen((int8_t *) args);
+        strcpy((int8_t *) pcb -> args, (int8_t *) args);
 
         /* saving values in tss to return to process kernel stack */
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
@@ -186,7 +181,11 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
     get_esp(esp);
     pcb = (pcb_t *) (esp & PCB_MASK);
 
-    return pcb -> files[fd].fops -> read(fd, buf, nbytes);
+    if(pcb -> files[fd].flags && FD_LIVE){
+        return pcb -> files[fd].fops -> read(fd, buf, nbytes);
+    }
+
+    return -1;
 }
 
 int32_t write (int32_t fd, const void* buf, int32_t nbytes){
@@ -199,7 +198,11 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     get_esp(esp);
     pcb = (pcb_t *) (esp & PCB_MASK);
 
-    return pcb -> files[fd].fops -> write(fd, buf, nbytes);
+    if(pcb -> files[fd].flags && FD_LIVE){
+        return pcb -> files[fd].fops -> write(fd, buf, nbytes);
+    }
+
+    return -1;
 }
 
 int32_t open (const uint8_t* filename){
@@ -271,14 +274,18 @@ int32_t close (int32_t fd){
     pcb_ptr = (pcb_t*)(esp & PCB_MASK);
     file_desc = &(pcb_ptr -> files[fd]);
 
-    file_desc -> fops -> close(fd);
-    
-    file_desc -> fops = NULL;
-    file_desc -> inode = NULL;
-    file_desc -> pos = 0;
-    file_desc -> flags = 0;
+    if(file_desc -> flags && FD_LIVE){
 
-    return 0;
+        file_desc -> fops -> close(fd);
+
+        file_desc -> fops = NULL;
+        file_desc -> inode = NULL;
+        file_desc -> pos = 0;
+        file_desc -> flags = 0;
+        return 0;
+    }
+
+    return -1;
 }
 
 int32_t getargs (uint8_t* buf, int32_t nbytes){
@@ -311,32 +318,15 @@ int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
 int32_t sigreturn (void){ return -1; }
 
 /* taken from given syscall material for now */
-void parse_arg(const uint8_t* command, uint8_t** args){
-	uint8_t buf[ARGS_MAX + 2];
-    uint8_t* scan;
-    uint32_t n_arg;
+void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t * arg_buf){
+    uint32_t i;
 
-    if (ARGS_MAX - 1 < strlen((int8_t*)command))
-    	return ;
-    strcpy((int8_t*)buf, (int8_t*)command);
-    for (scan = buf; '\0' != *scan && ' ' != *scan && '\n' != *scan; scan++);
-    	args[0] = (uint8_t*)buf;
-    n_arg = 1;
-    if ('\0' != *scan) {
-    	*scan++ = '\0';
-        /* parse arguments */
-    	while (1) {
-    		while (' ' == *scan) scan++;
-    		if ('\0' == *scan || '\n' == *scan) {
-    			*scan = '\0';
-    			break;
-    		}
-    		args[n_arg++] = (uint8_t*)scan;
-    		while ('\0' != *scan && ' ' != *scan && '\n' != *scan) scan++;
-    		if ('\0' != *scan)
-    			*scan++ = '\0';
-    	}
-    }
-    args[n_arg] = NULL;
-	return;
+    /* increment scan to the end of the first token */
+    for (i = 0; '\0' != command[i] && ' ' != command[i] && '\n' != command[i]; i++);
+    
+    memcpy(command_buf, command, i);
+    command_buf[i] = '\0';
+    
+    for(i = i; command[i] == ' '; i++);
+    strcpy((int8_t *) arg_buf, (int8_t *) command + i);
 }

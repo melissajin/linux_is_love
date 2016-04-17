@@ -42,7 +42,7 @@ fops_t * get_device_fops(const uint8_t * req_name) {
 	uint8_t * dev_name;
 	for(i = 0; i < num_devices; i++) {
 		dev_name = devices[i].name;
-		if(strncmp((int8_t *) req_name, (int8_t *) dev_name,
+		if(strlen((int8_t *) req_name) != 0 && strncmp((int8_t *) req_name, (int8_t *) dev_name,
 				strlen((int8_t *) req_name)) == 0) {
 			return devices[i].fops;
 		}

@@ -2,6 +2,7 @@
 #include "lib.h"
 #include "idt_set.h"
 #include "sys_calls.h"
+#include "process.h"
 
 struct regs
 {
@@ -138,7 +139,10 @@ void fault_handler(struct regs * r){
 		exception_messages[r -> int_no],
 		r -> err_code);
 
-	halt(1);
+	if(proc_count > 0)
+		halt(1);
+	
+	while(1);
 }
 
 /*sys_call_handler
