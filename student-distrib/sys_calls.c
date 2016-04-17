@@ -82,8 +82,12 @@ int32_t execute (const uint8_t* command) {
     if(pid < 0)
         return -1;
 
-    memcpy(command_buf, command, strlen((int8_t *) command));
     parse_arg(command, (uint8_t**)args);
+    int32_t cmd_len = strlen((int8_t *) args[0]);
+    if(args[1] != '\0') {
+        cmd_len++;
+    }
+    memcpy(command_buf, command + cmd_len, strlen((int8_t *) command) - cmd_len + 1);
 
     /* check for valid executable */
     if(-1 == read_dentry_by_name(args[0], &dentry))
@@ -255,18 +259,18 @@ int32_t open (const uint8_t* filename){
 int32_t close (int32_t fd){ 
     uint32_t esp;
     pcb_t* pcb_ptr;
-    fd_t file_desc;
+    fd_t * file_desc;
 
     if(fd < 2 || fd > 7) return -1; 
 
     get_esp(esp);
     pcb_ptr = (pcb_t*)(esp & PCB_MASK);
-    file_desc = pcb_ptr -> files[fd];
+    file_desc = &(pcb_ptr -> files[fd]);
     
-    file_desc.fops = NULL;
-    file_desc.inode = NULL;
-    file_desc.pos = 0;
-    file_desc.flags = DEAD;
+    file_desc -> fops = NULL;
+    file_desc -> inode = NULL;
+    file_desc -> pos = 0;
+    file_desc -> flags = DEAD;
 
     return 0;
 }
@@ -281,7 +285,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes){
     if(nbytes < (pcb_ptr -> args_len + 1)) return -1;
 
     memcpy(buf, pcb_ptr -> args, pcb_ptr -> args_len);
-    buf[pcb_ptr -> args_len + 1] = '\0';
+    buf[pcb_ptr -> args_len] = '\0';
 
     return 0;
 }
