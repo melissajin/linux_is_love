@@ -8,6 +8,7 @@
 #include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
+#include "../sys_calls.h"
 
 #define DEV_NAME "term"
 
@@ -266,8 +267,14 @@ void keyboard_handler_main(){
 			else{
 				if(scancode > MAX_SCANCODE){}//If not valid scancode do nothing
 				else if(!shift && ctrl && key_out == 'l') {
-							 clear();
-							 puts(line_buf);
+					clear();
+					puts(line_buf);
+				}
+				else if(!shift && ctrl && key_out == 'c') {
+					if(proc_count > 0){
+						send_eoi(KEYBOARD_IRQ_NUM);
+						halt(1);
+					}
 				}
 				else{
 					if((caps_lock ^ shift) && (!alt && !ctrl)

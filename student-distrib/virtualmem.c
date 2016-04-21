@@ -1,5 +1,6 @@
 #include "virtualmem.h"
 #include "lib.h"
+#include "process.h"
 
 #define TABLE_SIZE 1024
 #define PAGE_SIZE  4096  /* kilobytes */
@@ -31,6 +32,7 @@
 
 static uint32_t pd[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 static uint32_t pt_first[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
+static uint32_t pt_user_vidmem[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 
 void virtualmem_init()
 {
@@ -44,11 +46,14 @@ void virtualmem_init()
 
 	/* initialize video memory pages */
 	pd[0] = (uint32_t) pt_first | PDE_INIT_FLAGS | FLAG_P;
+	pd[PROG_VIDMEM_ADDR >> PDE_IDX_OFFS] = (uint32_t) pt_user_vidmem | PDE_INIT_FLAGS | FLAG_U;
 	for(i = 0; i < TABLE_SIZE; i++)
 	{
 		pt_first[i] = PTE_INIT_FLAGS;
+		pt_user_vidmem[i] = PTE_INIT_FLAGS;
 	}
 	pt_first[VIDEO >> PTE_IDX_OFFS & PTE_IDX_MASK] = VIDEO | PTE_INIT_FLAGS | FLAG_P;
+	pt_user_vidmem[PROG_VIDMEM_ADDR >> PTE_IDX_OFFS & PTE_IDX_MASK] = VIDEO | PTE_INIT_FLAGS | FLAG_P | FLAG_U;
 
 
 	/* initialize 4 MB kernel page */
@@ -95,6 +100,10 @@ void map_large_page(int32_t virtual_add, int32_t lower_b){
 	);
 }
 
-void unmap_large_page(int32_t virtual_add) {
+void set_pde_present(int32_t virtual_add) {
+	pd[virtual_add >> PDE_IDX_OFFS] |= FLAG_P;
+}
+
+void unmap_pde(int32_t virtual_add) {
 	pd[virtual_add >> PDE_IDX_OFFS] &= ~FLAG_P;
 }
