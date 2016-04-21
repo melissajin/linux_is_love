@@ -27,8 +27,7 @@ int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp;
 
-    get_esp(esp);
-    pcb_child_ptr = (pcb_t *) (esp & PCB_MASK);
+    pcb(pcb_child_ptr);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
     unmap_pde(PROG_VM_START);
@@ -66,7 +65,6 @@ int32_t execute (const uint8_t* command) {
     uint8_t buf[ELF_HEADER_LEN];
     dentry_t dentry;
     uint32_t addr;
-    uint32_t esp;
     uint32_t vm_end;
     pcb_t* pcb;
     fd_t stdin;
@@ -74,30 +72,27 @@ int32_t execute (const uint8_t* command) {
     fd_t fd;
     uint32_t i;
     int32_t pid;
-    uint32_t pcb_start;
+    pcb_t* pcb_start;
     fops_t * term_fops;
-
-    pid = add_process();
-    if(pid < 0)
-        return -1;
 
     parse_arg(command, command_buf, args);
 
     /* check for valid executable */
     if(-1 == read_dentry_by_name(command_buf, &dentry))
-		return -1; 
-	if(read_data(dentry.inode, 0, buf, ELF_HEADER_LEN) < ELF_HEADER_LEN)
-		return -1;
-	if(*((uint32_t *) buf) == ELF_MAGIC){
+        return -1; 
+    if(read_data(dentry.inode, 0, buf, ELF_HEADER_LEN) < ELF_HEADER_LEN)
+        return -1;
+    if(*((uint32_t *) buf) == ELF_MAGIC){
+        pid = add_process();
+        if(pid < 0)
+            return -1;
+
         addr = *((uint32_t *) (buf + ELF_ADDR_OFFS));  /* interpret the 4 bytes at buf[24-27] as a uint32_t */
         vm_end = PROG_VM_START + SPACE_4MB - WORD_SIZE;
-		map_large_page(PROG_VM_START, KERNEL_MEM_END + pid * SPACE_4MB);
-		
-        /* get current stack pointer and put in */
-        get_esp(esp);
+        map_large_page(PROG_VM_START, KERNEL_MEM_END + pid * SPACE_4MB);
         
         /* starting address of current pcb */
-        pcb_start = esp & PCB_MASK;
+        pcb(pcb_start);
 
         /* get terminal fops */
         term_fops = get_device_fops((uint8_t *) TERM_NAME);
@@ -135,17 +130,17 @@ int32_t execute (const uint8_t* command) {
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
         tss.ss0 = KERNEL_DS;
 
-		/* load file in physical memory */
-		load(&dentry, (uint8_t*) START_EXE_ADDR);
+        /* load file in physical memory */
+        load(&dentry, (uint8_t*) START_EXE_ADDR);
 
         /* increment # of processes */
         proc_count++;
 
         get_ebp(pcb -> ebp_parent);
         get_esp(pcb -> esp_parent);
-		
-		asm volatile("                        \n\
-			xorl    %%ecx, %%ecx              \n\
+        
+        asm volatile("                        \n\
+            xorl    %%ecx, %%ecx              \n\
             movw    $"STR(USER_CS)", %%cx     \n\
             movw    %%cx, %%ds                \n\
             movw    %%cx, %%es                \n\
@@ -161,25 +156,23 @@ int32_t execute (const uint8_t* command) {
             halt_ret_label:                   \n\
             movb    %%bl, %0                  \n\
             "
-			: "=rm" (retval)
-			: "r" (addr), "r" (vm_end)
+            : "=rm" (retval)
+            : "r" (addr), "r" (vm_end)
             : "cc", "memory"
-		);
+        );
 
         return retval;
-	}
-	return -1;
+    }
+    return -1;
 }
 
 int32_t read (int32_t fd, void* buf, int32_t nbytes){
-    uint32_t esp;
     pcb_t * pcb;
 
     /* if fd out of bounds or stdout */
-	if(fd < 0 || fd == 1 || fd >= FILE_ARRAY_LEN) return -1;
+    if(fd < 0 || fd == 1 || fd >= FILE_ARRAY_LEN) return -1;
 
-    get_esp(esp);
-    pcb = (pcb_t *) (esp & PCB_MASK);
+    pcb(pcb);
 
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> read(fd, buf, nbytes);
@@ -189,14 +182,12 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
 }
 
 int32_t write (int32_t fd, const void* buf, int32_t nbytes){
-    uint32_t esp;
     pcb_t * pcb;
 
     /* if fd out of bounds or stdin */
     if(fd < 0 || fd == 0 || fd >= FILE_ARRAY_LEN) return -1;
 
-    get_esp(esp);
-    pcb = (pcb_t *) (esp & PCB_MASK);
+    pcb(pcb);
 
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> write(fd, buf, nbytes);
@@ -206,20 +197,18 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
 }
 
 int32_t open (const uint8_t* filename){
-	int i, fd = -1;
-    uint32_t esp;
-	pcb_t* pcb_ptr;
-	dentry_t temp_dentry;
-	fd_t* fd_ptr = NULL;
+    int i, fd = -1;
+    pcb_t* pcb;
+    dentry_t temp_dentry;
+    fd_t* fd_ptr = NULL;
     fops_t * fops;
 
-    get_esp(esp);
-    pcb_ptr = (pcb_t*)(esp & PCB_MASK);
+    pcb(pcb);
 
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
     for(i = 2; i < FILE_ARRAY_LEN ; i++){
-        if(pcb_ptr->files[i].flags == 0){
+        if(pcb->files[i].flags == 0){
             fd = i;
             break;
         }
@@ -228,9 +217,9 @@ int32_t open (const uint8_t* filename){
     /* if no available fd directory */
     if(fd == -1) return -1;
 
-    fd_ptr = &(pcb_ptr -> files[i]);
+    fd_ptr = &(pcb -> files[i]);
 
-	/* get driver fops */
+    /* get driver fops */
     fops = get_device_fops(filename);
     if(fops != NULL) {
         fd_ptr -> fops = fops;
@@ -243,9 +232,9 @@ int32_t open (const uint8_t* filename){
         return fd;
     }
 
-	if(read_dentry_by_name(filename, &temp_dentry) == -1){
-		return -1;
-	}
+    if(read_dentry_by_name(filename, &temp_dentry) == -1){
+        return -1;
+    }
 
     fd_ptr -> fops = get_device_fops((uint8_t *) FS_DEV_NAME);
     fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
@@ -256,23 +245,21 @@ int32_t open (const uint8_t* filename){
     if(temp_dentry.ftype == DIR_FTYPE) {
         fd_ptr -> flags |= FD_DIR;
     }
-	
+    
     fd_ptr -> fops -> open(filename);
 
- 	return fd;
+    return fd;
 }
 
-int32_t close (int32_t fd){ 
-    uint32_t esp;
-    pcb_t* pcb_ptr;
+int32_t close (int32_t fd){
+    pcb_t* pcb;
     fd_t * file_desc;
 
     /* prevent closing stdin or stdout */
     if(fd < 2 || fd >= FILE_ARRAY_LEN) return -1; 
 
-    get_esp(esp);
-    pcb_ptr = (pcb_t*)(esp & PCB_MASK);
-    file_desc = &(pcb_ptr -> files[fd]);
+    pcb(pcb);
+    file_desc = &(pcb -> files[fd]);
 
     if(file_desc -> flags && FD_LIVE){
 
@@ -289,16 +276,14 @@ int32_t close (int32_t fd){
 }
 
 int32_t getargs (uint8_t* buf, int32_t nbytes){
-    uint32_t esp;
-    pcb_t * pcb_ptr;
+    pcb_t * pcb;
 
-    get_esp(esp);
-    pcb_ptr = (pcb_t * ) (esp & PCB_MASK);
+    pcb(pcb);
 
-    if(nbytes < (pcb_ptr -> args_len + 1)) return -1;
+    if(nbytes < (pcb -> args_len + 1)) return -1;
 
-    memcpy(buf, pcb_ptr -> args, pcb_ptr -> args_len);
-    buf[pcb_ptr -> args_len] = '\0';
+    memcpy(buf, pcb -> args, pcb -> args_len);
+    buf[pcb -> args_len] = '\0';
 
     return 0;
 }
