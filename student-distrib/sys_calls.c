@@ -1,4 +1,3 @@
-
 #include "sys_calls.h"
 #include "fs.h"
 #include "virtualmem.h"
@@ -30,20 +29,18 @@ int32_t halt (uint8_t status) {
     pcb(pcb_child_ptr);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
-    unmap_pde(PROG_VM_START);
-    unmap_pde(PROG_VIDMEM_ADDR);
     if(pcb_parent_ptr != NULL) {
-        map_large_page(PROG_VM_START, KERNEL_MEM_END + pcb_parent_ptr -> pid * SPACE_4MB);
+        set_pd(pcb_parent_ptr -> pd);
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
     } else {
-        tss.esp0 = KERNEL_MEM_END;
+        set_pd(NULL);
+        tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
     }
     
     esp = pcb_child_ptr -> esp_parent;
     ebp = pcb_child_ptr -> ebp_parent;
 
     delete_process(pcb_child_ptr -> pid);
-    proc_count--;
 
     asm volatile("              \n\
         movl    %1, %%esp       \n\
@@ -74,6 +71,7 @@ int32_t execute (const uint8_t* command) {
     int32_t pid;
     pcb_t* pcb_start;
     fops_t * term_fops;
+    uint32_t * pd;
 
     parse_arg(command, command_buf, args);
 
@@ -89,7 +87,13 @@ int32_t execute (const uint8_t* command) {
 
         addr = *((uint32_t *) (buf + ELF_ADDR_OFFS));  /* interpret the 4 bytes at buf[24-27] as a uint32_t */
         vm_end = PROG_VM_START + SPACE_4MB - WORD_SIZE;
-        map_large_page(PROG_VM_START, KERNEL_MEM_END + pid * SPACE_4MB);
+
+        /* set up process paging */
+        pd = get_process_pd(pid);
+        pd_init(pd);
+        set_pde(pd, PROG_VM_START, KERNEL_MEM_END + (pid - 1) * SPACE_4MB,
+                FLAG_PS | FLAG_U | FLAG_WE | FLAG_P);
+        set_pd(pd);
         
         /* starting address of current pcb */
         pcb(pcb_start);
@@ -121,10 +125,12 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;
+        pcb->parent_pcb = are_processes() ? (pcb_t *) pcb_start : NULL;
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
+
+        pcb -> pd = pd;
 
         /* saving values in tss to return to process kernel stack */
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
@@ -132,9 +138,6 @@ int32_t execute (const uint8_t* command) {
 
         /* load file in physical memory */
         load(&dentry, (uint8_t*) START_EXE_ADDR);
-
-        /* increment # of processes */
-        proc_count++;
 
         get_ebp(pcb -> ebp_parent);
         get_esp(pcb -> esp_parent);
@@ -289,12 +292,17 @@ int32_t getargs (uint8_t* buf, int32_t nbytes){
 }
 
 int32_t vidmap (uint8_t** screen_start){
+    pcb_t * pcb;
+
     if(((int32_t) screen_start < PROG_VM_START) || ((int32_t) screen_start >= PROG_VM_START + SPACE_4MB))
         return -1;
 
     *screen_start = (uint8_t *) PROG_VIDMEM_ADDR;
 
-    set_pde_present(PROG_VIDMEM_ADDR);
+    pcb(pcb);
+
+    // set_pde_present(PROG_VIDMEM_ADDR);
+    set_pde_flags(pcb -> pd, PROG_VIDMEM_ADDR, FLAG_P);
 
     return PROG_VIDMEM_ADDR;
 }

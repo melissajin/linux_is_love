@@ -271,7 +271,7 @@ void keyboard_handler_main(){
 					puts(line_buf);
 				}
 				else if(!shift && ctrl && key_out == 'c') {
-					if(proc_count > 0){
+					if(are_processes()){
 						send_eoi(KEYBOARD_IRQ_NUM);
 						halt(1);
 					}
