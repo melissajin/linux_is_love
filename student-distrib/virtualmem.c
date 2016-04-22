@@ -93,7 +93,7 @@ void pd_init(uint32_t * pd) {
 	pd[PROG_VIDMEM_ADDR >> PDE_IDX_OFFS] = (uint32_t) pt_user_vidmem | FLAG_WE | FLAG_U;
 
 	/* initialize 4 MB kernel page */
-	pd[KERNEL_LOC >> PDE_IDX_OFFS] = KERNEL_LOC | LARGE_INIT_FLAGS;
+	set_pde(pd, KERNEL_LOC, KERNEL_LOC, LARGE_INIT_FLAGS);
 }
 
 void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags) {
@@ -102,7 +102,7 @@ void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint3
 	} else {
 		physical_addr &= PDE_4KB_MASK;
 	}
-	pd[virtual_addr >> PDE_IDX_OFFS] = physical_addr & flags;
+	pd[virtual_addr >> PDE_IDX_OFFS] = physical_addr | flags;
 }
 
 void set_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags) {
