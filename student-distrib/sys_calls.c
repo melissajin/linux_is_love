@@ -99,7 +99,7 @@ int32_t execute (const uint8_t* command) {
         pcb(pcb_start);
 
         /* get terminal fops */
-        term_fops = get_device_fops((uint8_t *) TERM_NAME);
+        term_fops = get_device_fops(TERM_FTYPE);
 
         /* setting the pcb in the kernel stack */
         pcb = (pcb_t*) (KERNEL_MEM_END - (pid + 1) * PCB_SIZE);
@@ -202,7 +202,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
 int32_t open (const uint8_t* filename){
     int i, fd = -1;
     pcb_t* pcb;
-    dentry_t temp_dentry;
+    dentry_t dentry;
     fd_t* fd_ptr = NULL;
     fops_t * fops;
 
@@ -211,44 +211,33 @@ int32_t open (const uint8_t* filename){
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
     for(i = 2; i < FILE_ARRAY_LEN ; i++){
-        if(pcb->files[i].flags == 0){
+        if(!(pcb->files[i].flags && FD_LIVE)){
             fd = i;
             break;
         }
     }
 
-    /* if no available fd directory */
-    if(fd == -1) return -1;
+    /* if no available fd directory or valid filename*/
+    if(fd == -1 || read_dentry_by_name(filename, &dentry) == -1) 
+        return -1;
 
     fd_ptr = &(pcb -> files[i]);
+    fops = get_device_fops(dentry.ftype);
 
-    /* get driver fops */
-    fops = get_device_fops(filename);
-    if(fops != NULL) {
-        fd_ptr -> fops = fops;
+    /* RTC or Directory */
+    if(dentry.ftype == RTC_FTYPE || dentry.ftype == DIR_FTYPE){
         fd_ptr -> inode = NULL;
-        fd_ptr -> inode_num = 0;
-        fd_ptr -> flags = FD_LIVE;
-
-        fd_ptr -> fops -> open(filename);
-        
-        return fd;
+        fd_ptr -> inode_num = dentry.inode;
     }
 
-    if(read_dentry_by_name(filename, &temp_dentry) == -1){
-        return -1;
-    }
-
-    fd_ptr -> fops = get_device_fops((uint8_t *) FS_DEV_NAME);
-    fd_ptr -> inode = get_inode_ptr(temp_dentry.inode);
-    fd_ptr -> inode_num = temp_dentry.inode;
-    fd_ptr -> flags = FD_LIVE;
-    fd_ptr -> pos = 0;
-
-    if(temp_dentry.ftype == DIR_FTYPE) {
-        fd_ptr -> flags |= FD_DIR;
+    /* Regular File */
+    else if(dentry.ftype == FILE_FTYPE){
+        fd_ptr -> inode = get_inode_ptr(dentry.inode);
+        fd_ptr -> inode_num = dentry.inode;
     }
     
+    fd_ptr -> fops = fops;
+    fd_ptr -> flags = FD_LIVE;
     fd_ptr -> fops -> open(filename);
 
     return fd;

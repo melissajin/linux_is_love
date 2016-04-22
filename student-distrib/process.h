@@ -12,7 +12,6 @@
 
 /* fd flags */
 #define FD_LIVE            0x1
-#define FD_DIR             0x2
 
 typedef struct {
     fops_t * fops;
@@ -37,8 +36,8 @@ typedef struct pcb {
     uint32_t * pd;
 } pcb_t;
 
-int add_device(uint8_t * name, fops_t * fops);
-fops_t * get_device_fops(const uint8_t * req_name);
+int add_device(uint32_t fytpe, fops_t * fops);
+fops_t * get_device_fops(uint32_t fytpe);
 int32_t add_process();
 int32_t delete_process(int32_t pid);
 uint32_t * get_process_pd(int32_t pid);

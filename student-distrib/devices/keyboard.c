@@ -10,8 +10,6 @@
 #include "../process.h"
 #include "../sys_calls.h"
 
-#define DEV_NAME "term"
-
 extern void kybd_isr();
 
 static int32_t terminal_open(const uint8_t* filename);
@@ -200,13 +198,12 @@ void kybd_init(){
 	/* Set all of the values in the line buffer to the null character */
 	memset(line_buf, NULL_CHAR, LINE_BUF_MAX);
 
-	add_device((uint8_t *) DEV_NAME, &term_fops);
+	add_device(TERM_FTYPE, &term_fops);
 }
 
 void update(uint16_t key){
 	if(key == KEY_RETURN){
 		putc(key);
-		line_buf[buf_count++] = '\n';
 		hit_enter = 1;
 		input_len = 0;
 		if(!reading) {
