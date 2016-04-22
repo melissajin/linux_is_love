@@ -1,7 +1,8 @@
 #include "process.h"
 #include "lib.h"
+#include "virtualmem.h"
 
-#define MAX_DEVICES 6
+#define MAX_DEVICES		6
 #define MAX_PROCESSES	6
 
 typedef struct {
@@ -10,6 +11,7 @@ typedef struct {
 } dev_t;
 
 static int32_t procs[MAX_PROCESSES] = {0};
+static uint32_t pd[MAX_PROCESSES][TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 
 static dev_t devices[MAX_DEVICES];
 static int num_devices = 0;
@@ -82,4 +84,12 @@ int32_t delete_process(int32_t pid){
 	}
 	procs[pid] = 0;
 	return 0;
+}
+
+uint32_t * get_process_pd(int32_t pid) {
+	pid--;
+	if(pid < 0 || pid >= MAX_PROCESSES) {
+		return NULL;
+	}
+	return pd[pid];
 }
