@@ -12,7 +12,6 @@
 
 /* fd flags */
 #define FD_LIVE            0x1
-#define FD_DIR             0x2
 
 typedef struct {
     fops_t * fops;

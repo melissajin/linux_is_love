@@ -221,30 +221,20 @@ int32_t open (const uint8_t* filename){
     fd_ptr = &(pcb -> files[i]);
     fops = get_device_fops(dentry.ftype);
 
-    /* RTC */
-    if(dentry.ftype == RTC_FTYPE){
-        fd_ptr -> fops = fops;
+    /* RTC or Directory */
+    if(dentry.ftype == RTC_FTYPE || dentry.ftype == DIR_FTYPE){
         fd_ptr -> inode = NULL;
         fd_ptr -> inode_num = dentry.inode;
-        fd_ptr -> flags = FD_LIVE;
-    }
-
-    /* Directory */
-    else if(dentry.ftype == DIR_FTYPE){
-        fd_ptr -> fops = fops;
-        fd_ptr -> inode = NULL;
-        fd_ptr -> inode_num = dentry.inode;
-        fd_ptr -> flags = (FD_LIVE | FD_DIR);
     }
 
     /* Regular File */
     else if(dentry.ftype == FILE_FTYPE){
-        fd_ptr -> fops = fops;
         fd_ptr -> inode = get_inode_ptr(dentry.inode);
         fd_ptr -> inode_num = dentry.inode;
-        fd_ptr -> flags = FD_LIVE;
     }
     
+    fd_ptr -> fops = fops;
+    fd_ptr -> flags = FD_LIVE;
     fd_ptr -> fops -> open(filename);
 
     return fd;
