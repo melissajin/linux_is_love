@@ -5,7 +5,7 @@
 #define MAX_PROCESSES	6
 
 typedef struct {
-	uint8_t * name;
+	uint32_t ftype;
 	fops_t * fops;
 } dev_t;
 
@@ -21,10 +21,10 @@ static int num_devices = 0;
  *    RETURN VALUE:
  *    SIDE EFFECTS: 
  */
-int add_device(uint8_t * name, fops_t * fops) {
+int add_device(uint32_t ftype, fops_t * fops) {
 	if(num_devices == MAX_DEVICES) return -1;
 
-	devices[num_devices].name = name;
+	devices[num_devices].ftype = ftype;
 	devices[num_devices].fops = fops;
 	num_devices++;
 	return 0;
@@ -37,13 +37,10 @@ int add_device(uint8_t * name, fops_t * fops) {
  *    RETURN VALUE:
  *    SIDE EFFECTS: 
  */
-fops_t * get_device_fops(const uint8_t * req_name) {
+fops_t * get_device_fops(uint32_t ftype) {
 	int i;
-	uint8_t * dev_name;
 	for(i = 0; i < num_devices; i++) {
-		dev_name = devices[i].name;
-		if(strlen((int8_t *) req_name) != 0 && strncmp((int8_t *) req_name, (int8_t *) dev_name,
-				strlen((int8_t *) req_name)) == 0) {
+		if(ftype == devices[i].ftype) {
 			return devices[i].fops;
 		}
 	}

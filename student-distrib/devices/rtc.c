@@ -23,8 +23,6 @@
 #define RATE_MAX     1024
 #define RTC_ABS_MAX  32768
 
-#define DEV_NAME     "rtc"
-
 extern void rtc_isr();
 
 static int32_t rtc_open(const uint8_t * filename);
@@ -45,7 +43,7 @@ void rtc_init() {
     /* Populate IDT entry for rtc */
     set_int_gate(0x28, (unsigned long) rtc_isr);
 
-    add_device((uint8_t *) DEV_NAME, &rtc_fops);
+    add_device(RTC_FTYPE, &rtc_fops);
 }
 
 void rtc_handler_main() {

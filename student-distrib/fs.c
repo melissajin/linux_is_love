@@ -1,8 +1,7 @@
 #include "fs.h"
 #include "process.h"
 
-#define DEV_NAME FS_DEV_NAME
-
+static int32_t dir_read (int32_t fd, void* buf, int32_t nbytes);
 static int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
 static int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
 static int32_t fs_open (const uint8_t* filename);
@@ -17,11 +16,19 @@ static fops_t fs_fops = {
 	.close = fs_close
 };
 
+static fops_t dir_fops = {
+	.read = dir_read,
+	.write = fs_write,
+	.open = fs_open,
+	.close = fs_close
+};
+
  /* Initialize filesystem */
 void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
 
-	add_device((uint8_t *) DEV_NAME, &fs_fops);
+	add_device(FILE_FTYPE, &fs_fops);
+	add_device(DIR_FTYPE, &dir_fops);
 }
 
 /* read_dentry_by_name
@@ -216,6 +223,20 @@ void fs_init(module_t *mem_mod){
  	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
  }
 
+int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
+ 	int32_t bytes_read;
+ 	pcb_t * pcb;
+ 	fd_t * fs_fd;
+
+ 	pcb(pcb);
+ 	fs_fd = &(pcb -> files[fd]);
+
+ 	bytes_read = read_directory_entry(fs_fd -> pos, buf, nbytes);
+ 	fs_fd -> pos++;
+
+ 	return bytes_read;
+ }
+
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	int32_t bytes_read;
  	pcb_t * pcb;
@@ -224,13 +245,9 @@ void fs_init(module_t *mem_mod){
  	pcb(pcb);
  	fs_fd = &(pcb -> files[fd]);
 
- 	if(fs_fd -> flags & FD_DIR) {
- 		bytes_read = read_directory_entry(fs_fd -> pos, buf, nbytes);
- 		fs_fd -> pos++;
- 	} else {
- 		bytes_read = read_data(fs_fd -> inode_num, fs_fd -> pos, buf, nbytes);
- 		fs_fd -> pos += bytes_read;
- 	}
+ 	bytes_read = read_data(fs_fd -> inode_num, fs_fd -> pos, buf, nbytes);
+ 	fs_fd -> pos += bytes_read;
+ 	
  	return bytes_read;
  }
 
