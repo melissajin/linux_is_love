@@ -37,13 +37,12 @@ typedef struct pcb {
     uint32_t * pd;
 } pcb_t;
 
-uint32_t proc_count;
-
 int add_device(uint8_t * name, fops_t * fops);
 fops_t * get_device_fops(const uint8_t * req_name);
 int32_t add_process();
 int32_t delete_process(int32_t pid);
 uint32_t * get_process_pd(int32_t pid);
+int32_t are_processes();
 
 #define get_esp(x)          \
 do {                        \

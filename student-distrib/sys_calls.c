@@ -34,14 +34,13 @@ int32_t halt (uint8_t status) {
         tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
     } else {
         set_pd(NULL);
-        tss.esp0 = KERNEL_MEM_END;
+        tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
     }
     
     esp = pcb_child_ptr -> esp_parent;
     ebp = pcb_child_ptr -> ebp_parent;
 
     delete_process(pcb_child_ptr -> pid);
-    proc_count--;
 
     asm volatile("              \n\
         movl    %1, %%esp       \n\
@@ -126,7 +125,7 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = proc_count ? (pcb_t *) pcb_start : NULL;
+        pcb->parent_pcb = are_processes() ? (pcb_t *) pcb_start : NULL;
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
@@ -139,9 +138,6 @@ int32_t execute (const uint8_t* command) {
 
         /* load file in physical memory */
         load(&dentry, (uint8_t*) START_EXE_ADDR);
-
-        /* increment # of processes */
-        proc_count++;
 
         get_ebp(pcb -> ebp_parent);
         get_esp(pcb -> esp_parent);
