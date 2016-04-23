@@ -39,4 +39,6 @@ void set_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
 void unset_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
 void set_pd(uint32_t * pd);
 
+void set_vidmem_tables(uint32_t * pd, uint32_t num);
+
 #endif

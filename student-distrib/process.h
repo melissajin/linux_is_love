@@ -3,6 +3,7 @@
 
 #include "fs.h"
 #include "types.h"
+#include "devices/keyboard.h"
 
 #define PROG_VIDMEM_ADDR 0x8400000
 
@@ -41,7 +42,9 @@ fops_t * get_device_fops(uint32_t fytpe);
 int32_t add_process();
 int32_t delete_process(int32_t pid);
 uint32_t * get_process_pd(int32_t pid);
-int32_t are_processes();
+int32_t processes();
+int32_t get_active_process(uint32_t term_num);
+int32_t set_active_process(uint32_t term_num, int32_t pid);
 
 #define get_esp(x)          \
 do {                        \

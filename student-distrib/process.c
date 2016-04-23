@@ -8,6 +8,7 @@
 static uint32_t proc_count = 0;
 static uint8_t procs[MAX_PROCESSES] = {0};
 static uint32_t pd[MAX_PROCESSES][TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
+static int32_t active_processes[MAX_TERMINALS] = {-1, -1, -1};
 
 static fops_t * devices[MAX_DEVICES];
 
@@ -82,6 +83,19 @@ uint32_t * get_process_pd(int32_t pid) {
 	return pd[pid];
 }
 
-int32_t are_processes() {
-	return proc_count > 0;
+int32_t processes() {
+	return proc_count;
+}
+
+int32_t get_active_process(uint32_t term_num){
+	if(term_num < 0 || term_num >= MAX_TERMINALS) return -1;
+
+	return active_processes[term_num];
+}
+
+int32_t set_active_process(uint32_t term_num, int32_t pid){
+	if(term_num < 0 || term_num >= MAX_TERMINALS) return -1;
+
+	active_processes[term_num] = pid;
+	return 0;
 }

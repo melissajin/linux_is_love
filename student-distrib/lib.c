@@ -36,6 +36,26 @@ clear(void)
     move_cursor();
 }
 
+int
+get_screen_x() {
+	return screen_x;
+}
+
+int
+get_screen_y() {
+	return screen_y;
+}
+
+void
+set_screen_x(int x) {
+	screen_x = x;
+}
+
+void
+set_screen_y(int y) {
+	screen_y = y;
+}
+
 void
 move_cursor(void){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor

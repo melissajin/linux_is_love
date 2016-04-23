@@ -139,7 +139,7 @@ void fault_handler(struct regs * r){
 		exception_messages[r -> int_no],
 		r -> err_code);
 
-	if(are_processes())
+	if(processes())
 		halt(1);
 	
 	while(1);
