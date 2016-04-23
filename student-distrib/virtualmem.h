@@ -33,10 +33,12 @@
 void virtualmem_init();
 
 /* generalized paging functions */
-void pd_init(uint32_t * pd);
+void pd_init(uint32_t * pd, int32_t term_num);
 void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags);
 void set_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
 void unset_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
 void set_pd(uint32_t * pd);
+
+void set_vidmem_tables(uint32_t * pd, uint32_t num);
 
 #endif

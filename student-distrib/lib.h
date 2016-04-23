@@ -16,7 +16,7 @@ int8_t *itoa(uint32_t value, int8_t* buf, int32_t radix);
 int8_t *strrev(int8_t* s);
 uint32_t strlen(const int8_t* s);
 void clear(void);
-void move_cursor(void);
+void move_cursor(int32_t term_num, uint32_t term_mem_length);
 void vert_scroll(void);
 void backspace_fnc(void);
 void test_interrupts(void);
@@ -28,6 +28,11 @@ void* memmove(void* dest, const void* src, uint32_t n);
 int32_t strncmp(const int8_t* s1, const int8_t* s2, uint32_t n);
 int8_t* strcpy(int8_t* dest, const int8_t*src);
 int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
+int get_screen_x();
+int get_screen_y();
+void set_screen_x(int x);
+void set_screen_y(int y);
+void set_vga_start(uint32_t addr);
 
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);

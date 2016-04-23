@@ -3,6 +3,7 @@
 
 #include "fs.h"
 #include "types.h"
+#include "devices/keyboard.h"
 
 #define PROG_VIDMEM_ADDR 0x8400000
 
@@ -22,8 +23,8 @@ typedef struct {
 } fd_t;
 
 typedef struct {
-    uint32_t eax, ebx, ecx, edx, esi, edi, esp, ebp;
-} regs_t;
+    uint32_t esp, eip, esp0;
+} context_t;
 
 typedef struct pcb {
 	fd_t files[FILE_ARRAY_LEN];
@@ -31,9 +32,10 @@ typedef struct pcb {
     uint32_t args_len;
 	int32_t pid;
 	struct pcb* parent_pcb;
-    regs_t regs;
+    context_t context;
     uint32_t esp_parent, ebp_parent;
     uint32_t * pd;
+    int32_t term_num;
 } pcb_t;
 
 int add_device(uint32_t fytpe, fops_t * fops);
@@ -41,13 +43,17 @@ fops_t * get_device_fops(uint32_t fytpe);
 int32_t add_process();
 int32_t delete_process(int32_t pid);
 uint32_t * get_process_pd(int32_t pid);
-int32_t are_processes();
+int32_t processes();
+int32_t get_active_process(uint32_t term_num);
+int32_t set_active_process(uint32_t term_num, int32_t pid);
+void context_switch(pcb_t * prev, pcb_t * next);
+int32_t free_procs();
 
 #define get_esp(x)          \
 do {                        \
     asm volatile (          \
         "movl %%esp, %0"    \
-        : "=rm" (x)         \
+        : "=m" (x)          \
     );                      \
 } while(0)
 
@@ -55,7 +61,7 @@ do {                        \
 do {                        \
     asm volatile (          \
         "movl %%ebp, %0"    \
-        : "=rm" (x)         \
+        : "=m" (x)          \
     );                      \
 } while(0)
 

@@ -4,18 +4,16 @@
 #include "lib.h"
 #include "process.h"
 #include "x86_desc.h"
+#include "devices/keyboard.h"
 
 #define PROG_VM_START   0x8000000
-#define KERNEL_MEM_END  0x800000
 #define SPACE_4MB       0x400000
-#define PCB_SIZE        0x2000
 #define START_EXE_ADDR  0x08048000
 
 #define ELF_HEADER_LEN  40
 #define ELF_MAGIC       0x464c457f
 #define ELF_ADDR_OFFS   24
 
-#define TERM_NAME       "term"
 #define WORD_SIZE       4
 
 /* trick to stringify macros */
@@ -31,10 +29,12 @@ int32_t halt (uint8_t status) {
 
     if(pcb_parent_ptr != NULL) {
         set_pd(pcb_parent_ptr -> pd);
-        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
+        tss.esp0 = pcb_parent_ptr -> context.esp0;
+        set_curr_active_process(pcb_parent_ptr -> pid);
     } else {
         set_pd(NULL);
         tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
+        set_curr_active_process(-1);
     }
     
     esp = pcb_child_ptr -> esp_parent;
@@ -90,7 +90,7 @@ int32_t execute (const uint8_t* command) {
 
         /* set up process paging */
         pd = get_process_pd(pid);
-        pd_init(pd);
+        pd_init(pd, get_current_terminal());
         set_pde(pd, PROG_VM_START, KERNEL_MEM_END + (pid - 1) * SPACE_4MB,
                 FLAG_PS | FLAG_U | FLAG_WE | FLAG_P);
         set_pd(pd);
@@ -125,15 +125,18 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = are_processes() ? (pcb_t *) pcb_start : NULL;
+        pcb->parent_pcb = curr_terminal_running_process() ? pcb_start : NULL;
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
 
         pcb -> pd = pd;
+        pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
+
+        set_curr_active_process(pid);
 
         /* saving values in tss to return to process kernel stack */
-        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
+        tss.esp0 = pcb -> context.esp0;
         tss.ss0 = KERNEL_DS;
 
         /* load file in physical memory */

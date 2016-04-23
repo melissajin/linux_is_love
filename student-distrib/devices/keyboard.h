@@ -167,6 +167,8 @@
 #define KEY_UNKNOWN           0x0000
 #define KEY_NUMKEYCODES       0x0000
 
+#define MAX_TERMINALS		  3
+
 // Initialize the keyboard device
 void kybd_init();
 
@@ -175,5 +177,14 @@ void update(uint16_t key);
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();
+
+// Switch to terminal number 'term_num' (0-2)
+int32_t start_terminal(uint32_t term_num);
+
+void set_curr_active_process(int32_t pid);
+
+int32_t curr_terminal_running_process();
+
+uint32_t get_current_terminal();
 
 #endif

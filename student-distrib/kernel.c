@@ -180,7 +180,8 @@ entry (unsigned long magic, unsigned long addr)
 	/* Execute the first program (`shell') ... */
 	while(1) {
 		clear();
-		execute((uint8_t *) "shell");
+		// execute((uint8_t *) "shell");
+		start_terminal(0);
 	}
 
 	/* Spin (nicely, so we don't chew up cycles) */
