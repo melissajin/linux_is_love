@@ -169,6 +169,16 @@
 
 #define MAX_TERMINALS		  3
 
+typedef struct {
+	int screen_x, screen_y;
+	char * video_mem;
+	int8_t line_buf[LINE_BUF_MAX];
+	uint16_t buf_count;
+	int32_t input_len;
+	int8_t hit_enter;
+	int8_t reading;
+} terminal_t;
+
 // Initialize the keyboard device
 void kybd_init();
 
@@ -183,8 +193,12 @@ int32_t start_terminal(uint32_t term_num);
 
 void set_curr_active_process(int32_t pid);
 
+int32_t get_curr_active_process();
+
 int32_t curr_terminal_running_process();
 
 uint32_t get_current_terminal();
+
+terminal_t * get_terminal(int32_t term_num);
 
 #endif

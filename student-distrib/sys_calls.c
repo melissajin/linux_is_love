@@ -5,6 +5,7 @@
 #include "process.h"
 #include "x86_desc.h"
 #include "devices/keyboard.h"
+#include "devices/pit.h"
 
 #define PROG_VM_START   0x8000000
 #define SPACE_4MB       0x400000
@@ -24,23 +25,29 @@ int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp;
 
+    cli();
+
     pcb(pcb_child_ptr);
+    // pcb_child_ptr = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (get_curr_active_process() + 1));
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
+
+    delete_process(pcb_child_ptr -> pid);
 
     if(pcb_parent_ptr != NULL) {
         set_pd(pcb_parent_ptr -> pd);
         tss.esp0 = pcb_parent_ptr -> context.esp0;
-        set_curr_active_process(pcb_parent_ptr -> pid);
+        set_active_process(pcb_parent_ptr -> term_num, pcb_parent_ptr -> pid);
     } else {
         set_pd(NULL);
-        tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
-        set_curr_active_process(-1);
+        // tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
+        set_active_process(pcb_child_ptr -> term_num, -1);
+        while(1) {
+            execute((uint8_t *) "shell");
+        }
     }
     
     esp = pcb_child_ptr -> esp_parent;
     ebp = pcb_child_ptr -> ebp_parent;
-
-    delete_process(pcb_child_ptr -> pid);
 
     asm volatile("              \n\
         movl    %1, %%esp       \n\
@@ -63,6 +70,7 @@ int32_t execute (const uint8_t* command) {
     dentry_t dentry;
     uint32_t addr;
     uint32_t vm_end;
+    uint32_t parent_pid;
     pcb_t* pcb;
     fd_t stdin;
     fd_t stdout;
@@ -72,6 +80,8 @@ int32_t execute (const uint8_t* command) {
     pcb_t* pcb_start;
     fops_t * term_fops;
     uint32_t * pd;
+
+    cli();
 
     parse_arg(command, command_buf, args);
 
@@ -88,15 +98,10 @@ int32_t execute (const uint8_t* command) {
         addr = *((uint32_t *) (buf + ELF_ADDR_OFFS));  /* interpret the 4 bytes at buf[24-27] as a uint32_t */
         vm_end = PROG_VM_START + SPACE_4MB - WORD_SIZE;
 
-        /* set up process paging */
-        pd = get_process_pd(pid);
-        pd_init(pd, get_current_terminal());
-        set_pde(pd, PROG_VM_START, KERNEL_MEM_END + (pid - 1) * SPACE_4MB,
-                FLAG_PS | FLAG_U | FLAG_WE | FLAG_P);
-        set_pd(pd);
-        
         /* starting address of current pcb */
-        pcb(pcb_start);
+        // pcb(pcb_start);
+        parent_pid = get_curr_active_process();
+        pcb_start = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (parent_pid + 1));
 
         /* get terminal fops */
         term_fops = get_device_fops(TERM_FTYPE);
@@ -125,7 +130,20 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = curr_terminal_running_process() ? pcb_start : NULL;
+        if(curr_terminal_running_process()) {
+            pcb -> parent_pcb = pcb_start;
+            pcb -> term_num = pcb_start -> term_num;
+        } else {
+            pcb -> parent_pcb = NULL;
+            pcb -> term_num = get_current_terminal();
+        }
+       
+        /* set up process paging */
+        pd = get_process_pd(pid);
+        pd_init(pd, pcb -> term_num);
+        set_pde(pd, PROG_VM_START, KERNEL_MEM_END + (pid - 1) * SPACE_4MB,
+                FLAG_PS | FLAG_U | FLAG_WE | FLAG_P);
+        set_pd(pd);
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
@@ -133,7 +151,7 @@ int32_t execute (const uint8_t* command) {
         pcb -> pd = pd;
         pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
 
-        set_curr_active_process(pid);
+        set_active_process(pcb -> term_num, pid);
 
         /* saving values in tss to return to process kernel stack */
         tss.esp0 = pcb -> context.esp0;
@@ -180,6 +198,8 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
 
     pcb(pcb);
 
+    // sti();
+
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> read(fd, buf, nbytes);
     }
@@ -194,6 +214,8 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     if(fd < 0 || fd == 0 || fd >= FILE_ARRAY_LEN) return -1;
 
     pcb(pcb);
+
+    // sti();
 
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> write(fd, buf, nbytes);
@@ -210,6 +232,8 @@ int32_t open (const uint8_t* filename){
     fops_t * fops;
 
     pcb(pcb);
+
+    // sti();
 
     /* find available file descriptor entry */
     /* start after stdin (0) and stdout (1) */
@@ -256,6 +280,8 @@ int32_t close (int32_t fd){
     pcb(pcb);
     file_desc = &(pcb -> files[fd]);
 
+    // sti();
+
     if(file_desc -> flags && FD_LIVE){
 
         file_desc -> fops -> close(fd);
@@ -275,6 +301,8 @@ int32_t getargs (uint8_t* buf, int32_t nbytes){
 
     pcb(pcb);
 
+    // sti();
+
     if(nbytes < (pcb -> args_len + 1)) return -1;
 
     memcpy(buf, pcb -> args, pcb -> args_len);
@@ -292,6 +320,8 @@ int32_t vidmap (uint8_t** screen_start){
     *screen_start = (uint8_t *) PROG_VIDMEM_ADDR;
 
     pcb(pcb);
+
+    // sti();
 
     // set_pde_present(PROG_VIDMEM_ADDR);
     set_pde_flags(pcb -> pd, PROG_VIDMEM_ADDR, FLAG_P);

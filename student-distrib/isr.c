@@ -3,6 +3,8 @@
 #include "idt_set.h"
 #include "sys_calls.h"
 #include "process.h"
+#include "devices/keyboard.h"
+#include "virtualmem.h"
 
 struct regs
 {
@@ -134,15 +136,36 @@ void isrs_install(){
  *SIDE EFFECT: Spins indefinately at aka and blue screens
  */
 void fault_handler(struct regs * r){
-	printf("Process terminated with exception %d: %s (%d)\n",
-		r -> int_no,
-		exception_messages[r -> int_no],
-		r -> err_code);
+	pcb_t * pcb;
+	terminal_t * terminal;
 
-	if(processes())
+	if(processes()) {
+		pcb(pcb);
+		terminal = get_terminal(pcb -> term_num);
+
+		set_screen_x(terminal -> screen_x);
+		set_screen_y(terminal -> screen_y);
+		set_video_mem(terminal -> video_mem + PAGE_SIZE * (pcb -> term_num + 1));
+
+		printf("Process terminated with exception %d: %s (%d)\n",
+			r -> int_no,
+			exception_messages[r -> int_no],
+			r -> err_code);
+
+		terminal -> screen_x = get_screen_x();
+		terminal -> screen_y = get_screen_y();
+		terminal -> video_mem = get_video_mem() - PAGE_SIZE * (pcb -> term_num + 1);
+
 		halt(1);
+	} else {
+		printf("Process terminated with exception %d: %s (%d)\n",
+			r -> int_no,
+			exception_messages[r -> int_no],
+			r -> err_code);
 
-	while(1);
+		while(1);
+	}
+	
 }
 
 /*sys_call_handler

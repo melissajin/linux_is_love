@@ -11,14 +11,17 @@
 
 int32_t printf(int8_t *format, ...);
 void putc(uint8_t c);
+void putc_in_terminal(uint8_t c, int * screen_x, int * screen_y, char * video_mem);
 int32_t puts(int8_t *s);
 int8_t *itoa(uint32_t value, int8_t* buf, int32_t radix);
 int8_t *strrev(int8_t* s);
 uint32_t strlen(const int8_t* s);
 void clear(void);
-void move_cursor(int32_t term_num, uint32_t term_mem_length);
+void clear_terminal(int * screen_x, int * screen_y, char * video_mem);
+void move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_length);
 void vert_scroll(void);
-void backspace_fnc(void);
+void vert_scroll_in_terminal(char * video_mem);
+void backspace_fnc(int * screen_x, int * screen_y, char * video_mem);
 void test_interrupts(void);
 void* memset(void* s, int32_t c, uint32_t n);
 void* memset_word(void* s, int32_t c, uint32_t n);
@@ -30,8 +33,10 @@ int8_t* strcpy(int8_t* dest, const int8_t*src);
 int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
 int get_screen_x();
 int get_screen_y();
+char * get_video_mem();
 void set_screen_x(int x);
 void set_screen_y(int y);
+void set_video_mem(char * mem);
 void set_vga_start(uint32_t addr);
 
 /* Userspace address-check functions */

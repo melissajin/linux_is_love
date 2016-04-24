@@ -3,6 +3,7 @@
  */
 
 #include "keyboard.h"
+#include "pit.h"
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
@@ -10,14 +11,7 @@
 #include "../process.h"
 #include "../sys_calls.h"
 #include "../virtualmem.h"
-
-typedef struct {
-	int screen_x, screen_y;
-	int8_t line_buf[LINE_BUF_MAX];
-	uint16_t buf_count;
-	int32_t input_len;
-	int8_t hit_enter;
-} terminal_t;
+#include "../x86_desc.h"
 
 extern void kybd_isr();
 
@@ -25,9 +19,6 @@ static int32_t terminal_open(const uint8_t* filename);
 static int32_t terminal_close(int32_t fd);
 static int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes);
 static int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes);
-
-static void set_terminal_vidmem_pt(uint32_t term_num, uint32_t num);
-static void set_terminal_vidmem_pt_helper(pcb_t * pcb, uint32_t num);
 
 // Scancode for keyboard keys
 // Source: http://www.brokenthorn.com/Resources/OSDev19.html
@@ -120,8 +111,6 @@ static uint16_t kybd_keys [] = {
 
 static terminal_t terminals[MAX_TERMINALS];
 
-static int reading = 0;
-
 /* determine if the key is pressed */
 static int r_shift_key = 0;
 static int l_shift_key = 0;
@@ -153,15 +142,21 @@ int32_t terminal_close(int32_t fd){
 
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	int diff, chars_read;
+	pcb_t * pcb;
+	int32_t term_num;
 
 	/* Check for null pointer */
 	if(buf == NULL)
 		return -1;
 
+	pcb(pcb);
+	term_num = pcb -> term_num;
+
 	/* wait until user hit enter */
-	reading = 1;
-	terminals[current_terminal].hit_enter = 0;
-	while(!terminals[current_terminal].hit_enter);
+	terminals[term_num].reading = 1;
+	terminals[term_num].hit_enter = 0;
+
+	while(!terminals[term_num].hit_enter);
 
 	cli();
 
@@ -169,36 +164,48 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	if(nbytes > LINE_BUF_MAX) nbytes = LINE_BUF_MAX;
 
 	/* read nbytes from line buffer */
-	diff = terminals[current_terminal].buf_count - nbytes;
-	chars_read = nbytes > terminals[current_terminal].buf_count ?
-			terminals[current_terminal].buf_count : nbytes;
+	diff = terminals[term_num].buf_count - nbytes;
+	chars_read = nbytes > terminals[term_num].buf_count ?
+			terminals[term_num].buf_count : nbytes;
 	if(diff < 0) diff = 0;
-	memcpy(buf, terminals[current_terminal].line_buf, nbytes);
+	memcpy(buf, terminals[term_num].line_buf, nbytes);
 
 	/* move unread bytes in line buffer to beginning */
-	memmove(terminals[current_terminal].line_buf, terminals[current_terminal].line_buf + nbytes, diff);
+	memmove(terminals[term_num].line_buf, terminals[term_num].line_buf + nbytes, diff);
 	/* clear rest of line buffer */
-	memset(terminals[current_terminal].line_buf + diff, NULL_CHAR, nbytes);
-	terminals[current_terminal].buf_count = diff;
+	memset(terminals[term_num].line_buf + diff, NULL_CHAR, nbytes);
+	terminals[term_num].buf_count = diff;
 
 	sti();
 
-	reading = 0;
-	terminals[current_terminal].hit_enter = 0;
+	terminals[term_num].reading = 0;
+	terminals[term_num].hit_enter = 0;
 	return chars_read;
 }
 
 int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	int i;
+	pcb_t * pcb;
+	int32_t term_num;
 
   /* Check for null pointer */
 	if(buf == NULL)
 		return -1;
 
+	pcb(pcb);
+	term_num = pcb -> term_num;
+
 	for(i = 0; i < nbytes; i++){
-		putc(((int8_t *) buf)[i]);
+		putc_in_terminal(((int8_t *) buf)[i],
+			&(terminals[term_num].screen_x),
+			&(terminals[term_num].screen_y),
+			terminals[term_num].video_mem
+		);
 	}
-	move_cursor(current_terminal, PAGE_SIZE);
+	if(pcb -> term_num == current_terminal) {
+		move_cursor(term_num, terminals[term_num].screen_x,
+			terminals[term_num].screen_y, PAGE_SIZE);
+	}
 
 	return nbytes;
 }
@@ -218,38 +225,56 @@ void kybd_init(){
 		terminals[i].buf_count = 0;
 		terminals[i].screen_x = 0;
 		terminals[i].screen_y = 0;
+		terminals[i].reading = 0;
+		terminals[i].video_mem = get_video_mem();
 	}
 
 	add_device(TERM_FTYPE, &term_fops);
 }
 
 void update(uint16_t key){
+	terminal_t * curr_term = &(terminals[current_terminal]);
+
 	if(key == KEY_RETURN){
-		putc(key);
-		move_cursor(current_terminal, PAGE_SIZE);
-		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count++] = '\n';
-		terminals[current_terminal].hit_enter = 1;
-		terminals[current_terminal].input_len = 0;
-		if(!reading) {
-			memset(terminals[current_terminal].line_buf, NULL_CHAR, LINE_BUF_MAX);
-			terminals[current_terminal].buf_count = 0;
+		putc_in_terminal(key,
+			&(curr_term -> screen_x),
+			&(curr_term -> screen_y),
+			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
+		);
+		move_cursor(current_terminal, curr_term -> screen_x, 
+			curr_term -> screen_y, PAGE_SIZE);
+		curr_term -> line_buf[curr_term -> buf_count++] = '\n';
+		curr_term -> hit_enter = 1;
+		curr_term -> input_len = 0;
+		if(!curr_term -> reading) {
+			memset(curr_term -> line_buf, NULL_CHAR, LINE_BUF_MAX);
+			curr_term -> buf_count = 0;
 		}
 	}
 	else if(key == KEY_BACKSPACE){
-		if(terminals[current_terminal].input_len){
-			backspace_fnc();
-			move_cursor(current_terminal, PAGE_SIZE);
-			terminals[current_terminal].buf_count--;
-			terminals[current_terminal].input_len--;
-			terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = NULL_CHAR;
+		if(curr_term -> input_len){
+			backspace_fnc(&(curr_term -> screen_x),
+				&(curr_term -> screen_y),
+				curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
+			);
+			move_cursor(current_terminal, curr_term -> screen_x, 
+				curr_term -> screen_y, PAGE_SIZE);
+			curr_term -> buf_count--;
+			curr_term -> input_len--;
+			curr_term -> line_buf[curr_term -> buf_count] = NULL_CHAR;
 		}
 	}
-	else if(terminals[current_terminal].buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
-		putc(key);
-		move_cursor(current_terminal, PAGE_SIZE);
-		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = key;
-		terminals[current_terminal].buf_count++;
-		terminals[current_terminal].input_len++;
+	else if(curr_term -> buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
+		putc_in_terminal(key,
+			&(curr_term -> screen_x),
+			&(curr_term -> screen_y),
+			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
+		);
+		move_cursor(current_terminal, curr_term -> screen_x, 
+			curr_term -> screen_y, PAGE_SIZE);
+		curr_term -> line_buf[curr_term -> buf_count] = key;
+		curr_term -> buf_count++;
+		curr_term -> input_len++;
 	}
 }
 
@@ -257,6 +282,7 @@ void keyboard_handler_main(){
 
 	unsigned char scancode;
 	unsigned char status;
+	int i;
 
 	status = inb(KEYBOARD_PORT);
 	if(status & 1){
@@ -288,10 +314,19 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_LALT) l_alt_key = 1;
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
-				if(0 && scancode > MAX_SCANCODE){}//If not valid scancode do nothing
-				else if(!shift && ctrl && key_out == 'l') {
-					clear();
-					puts(terminals[current_terminal].line_buf);
+				if(!shift && ctrl && key_out == 'l') {
+					clear_terminal(&(terminals[current_terminal].screen_x),
+						&(terminals[current_terminal].screen_y),
+						terminals[current_terminal].video_mem);
+					for(i = 0; i < terminals[current_terminal].buf_count; i++){
+						putc_in_terminal(((int8_t *) terminals[current_terminal].line_buf)[i],
+							&(terminals[current_terminal].screen_x),
+							&(terminals[current_terminal].screen_y),
+							terminals[current_terminal].video_mem
+						);
+					}
+					move_cursor(current_terminal, terminals[current_terminal].screen_x,
+						terminals[current_terminal].screen_y, PAGE_SIZE);
 				}
 				else if(!shift && ctrl && key_out == 'c') {
 					if(processes()){
@@ -302,15 +337,19 @@ void keyboard_handler_main(){
 				else if(alt && key_out == KEY_F1) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(0);
+					return;
 				}
 				else if(alt && key_out == KEY_F2) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(1);
+					return;
 				}
 				else if(alt && key_out == KEY_F3) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(2);
+					return;
 				}
+				else if(scancode > MAX_SCANCODE){} //If not valid scancode do nothing
 				else{
 					if((caps_lock ^ shift) && (!alt && !ctrl)
 							&& (key_out >= 'a' && key_out <= 'z'))
@@ -371,7 +410,6 @@ void keyboard_handler_main(){
 
 int32_t start_terminal(uint32_t term_num){
 	int32_t curr_active_process, next_active_process;
-	pcb_t * curr_pcb, * next_pcb;
 
 	if(term_num < 0 || term_num >= MAX_TERMINALS) return -1;
 	if(term_num == current_terminal) return -1;
@@ -380,85 +418,36 @@ int32_t start_terminal(uint32_t term_num){
 	next_active_process = get_active_process(term_num);
 	
 	if(!free_procs() && next_active_process == -1) return -1;
-	/* update video memory */
 
 	set_vga_start(term_num * PAGE_SIZE);
-	if(curr_active_process != -1) {
-		/* save old terminal cursor */
-		terminals[current_terminal].screen_x = get_screen_x();
-		terminals[current_terminal].screen_y = get_screen_y();
-	
-		/* set new terminal cursor */
-		set_screen_x(terminals[term_num].screen_x);
-		set_screen_y(terminals[term_num].screen_y);
-		
-		move_cursor(term_num, PAGE_SIZE);
-	}
+
+	move_cursor(term_num, terminals[term_num].screen_x, 
+		terminals[term_num].screen_y, PAGE_SIZE);
 
 	/* switch processes */
 	current_terminal = term_num;
-	curr_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (curr_active_process + 1));
 	if(next_active_process == -1){
 		/* terminal not initialized */
 		/* start shell in terminal */
 		uint8_t shell[] = "shell";
 
 		if(curr_active_process != -1) {
-			asm volatile("					\n\
-				pushfl						\n\
-				pushl	%%ebp				\n\
-				movl	%%esp, %[prev_esp]	\n\
-				movl	$1f, %[prev_eip]	\n\
-				pushl	%[shell_ptr]		\n\
-				exec:						\n\
-				call	execute				\n\
-				jmp		exec				\n\
-											\n\
-				1:							\n\
-				popl	%%ebp				\n\
-				popfl						\n\
-				"
-				: [prev_esp] "=m" (curr_pcb -> context.esp),
-				  [prev_eip] "=m" (curr_pcb -> context.eip)
-				: [shell_ptr] "r" (shell)
-			);
+			schedule_for_execution(shell);
 		} else {
 			while(1)
 				execute(shell);
 		}
-	}else{
-		/* terminal already initialized */
-		next_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_active_process + 1));
-
-		/* run terminal's active process */
-		context_switch(curr_pcb, next_pcb);
 	}
 
 	return 0;
 }
 
-void set_terminal_vidmem_pt(uint32_t term_num, uint32_t num) {
-	int32_t active_process;
-	pcb_t * pcb;
-
-	active_process = get_active_process(term_num);
-
-	pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (active_process + 1));
-	// pcb_from_pid(pcb, active_process);
-
-	set_terminal_vidmem_pt_helper(pcb, num);
-}
-
-void set_terminal_vidmem_pt_helper(pcb_t * pcb, uint32_t num) {
-	if(pcb == NULL) return;
-
-	set_vidmem_tables(pcb -> pd, num);
-
-	set_terminal_vidmem_pt_helper(pcb -> parent_pcb, num);
-}
-
 void set_curr_active_process(int32_t pid) {
 	set_active_process(current_terminal, pid);
+}
+
+int32_t get_curr_active_process() {
+	return get_active_process(current_terminal);
 }
 
 int32_t curr_terminal_running_process(){
@@ -467,4 +456,8 @@ int32_t curr_terminal_running_process(){
 
 uint32_t get_current_terminal() {
 	return current_terminal;
+}
+
+terminal_t * get_terminal(int32_t term_num) {
+	return &(terminals[term_num]);
 }

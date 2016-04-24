@@ -1,21 +1,25 @@
 #define USER_CS 0x0023
 #define USER_DS 0x002B
 
+.data
+temp_esp: .long 0
+
 .text
+
+.global temp_esp
 
 .global isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7 //provides all the assembly linkages to be called by c functions
 .global isr8, isr9, isr10, isr11, isr12, isr13, isr14, isr15
 .global isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
 .global sys_call
-.global kybd_isr, rtc_isr
+.global kybd_isr, rtc_isr, pit_isr
 
 .extern fault_handler		#assembly linkage for all our exceptions
 .extern sys_call_handler	#assembly linkage for sys calls
 .extern keyboard_handler_main	#assembly linkage for keyboard
 .extern rtc_handler_main	#assembly linkage for rtc
 .extern halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn #system calls
-
 
 sys_table:
 	.long halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
@@ -288,8 +292,15 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 	popa
 	iret
 
+pit_isr:
+	cli
+	pusha
+	movl %esp, temp_esp
+	call pit_handler_main
+	popa
+	iret
+
 sys_call:		#preparing argument for handle_syscall
-	sti
 	jmp handle_syscall
 
 .end
