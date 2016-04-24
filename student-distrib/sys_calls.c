@@ -29,10 +29,12 @@ int32_t halt (uint8_t status) {
 
     if(pcb_parent_ptr != NULL) {
         set_pd(pcb_parent_ptr -> pd);
-        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pcb_parent_ptr -> pid - WORD_SIZE;
+        tss.esp0 = pcb_parent_ptr -> context.esp0;
+        set_curr_active_process(pcb_parent_ptr -> pid);
     } else {
         set_pd(NULL);
         tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
+        set_curr_active_process(-1);
     }
     
     esp = pcb_child_ptr -> esp_parent;
@@ -129,11 +131,12 @@ int32_t execute (const uint8_t* command) {
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
 
         pcb -> pd = pd;
+        pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
 
         set_curr_active_process(pid);
 
         /* saving values in tss to return to process kernel stack */
-        tss.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
+        tss.esp0 = pcb -> context.esp0;
         tss.ss0 = KERNEL_DS;
 
         /* load file in physical memory */

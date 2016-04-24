@@ -133,7 +133,7 @@ static int hit_enter = 0;
 /* determine if the key is on */
 static int caps_lock = 0;
 
-static int32_t current_terminal = 0;
+static int32_t current_terminal = -1;
 
 fops_t term_fops = {
 	.read = terminal_read,
@@ -366,12 +366,15 @@ void keyboard_handler_main(){
 
 int32_t start_terminal(uint32_t term_num){
 	int32_t curr_active_process, next_active_process;
+	pcb_t * curr_pcb, * next_pcb;
 
 	if(term_num < 0 || term_num >= MAX_TERMINALS) return -1;
+	if(term_num == current_terminal) return -1;
 
 	curr_active_process = get_active_process(current_terminal);
 	next_active_process = get_active_process(term_num);
-
+	
+	if(!free_procs() && next_active_process == -1) return -1;
 	/* update video memory */
 
 	if(curr_active_process != -1) {
@@ -397,16 +400,42 @@ int32_t start_terminal(uint32_t term_num){
 	}
 
 	/* switch processes */
+	current_terminal = term_num;
+	curr_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (curr_active_process + 1));
 	if(next_active_process == -1){
 		/* terminal not initialized */
 		/* start shell in terminal */
-		current_terminal = term_num;
-		execute((uint8_t *) "shell");
+		uint8_t shell[] = "shell";
+
+		if(curr_active_process != -1) {
+			asm volatile("					\n\
+				pushfl						\n\
+				pushl	%%ebp				\n\
+				movl	%%esp, %[prev_esp]	\n\
+				movl	$1f, %[prev_eip]	\n\
+				pushl	%[shell_ptr]		\n\
+				exec:						\n\
+				call	execute				\n\
+				jmp		exec				\n\
+											\n\
+				1:							\n\
+				popl	%%ebp				\n\
+				popfl						\n\
+				"
+				: [prev_esp] "=m" (curr_pcb -> context.esp),
+				  [prev_eip] "=m" (curr_pcb -> context.eip)
+				: [shell_ptr] "r" (shell)
+			);
+		} else {
+			while(1)
+				execute(shell);
+		}
 	}else{
 		/* terminal already initialized */
+		next_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_active_process + 1));
 
 		/* run terminal's active process */
-
+		context_switch(curr_pcb, next_pcb);
 	}
 
 	return 0;

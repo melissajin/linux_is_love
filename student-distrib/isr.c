@@ -141,7 +141,7 @@ void fault_handler(struct regs * r){
 
 	if(processes())
 		halt(1);
-	
+
 	while(1);
 }
 
