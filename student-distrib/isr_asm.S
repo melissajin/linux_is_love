@@ -8,7 +8,7 @@
 .global isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
 .global sys_call
-.global kybd_isr, rtc_isr
+.global kybd_isr, rtc_isr, pit_isr
 
 .extern fault_handler		#assembly linkage for all our exceptions
 .extern sys_call_handler	#assembly linkage for sys calls
@@ -285,6 +285,13 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 	cli
 	pusha
 	call rtc_handler_main
+	popa
+	iret
+
+pit_isr:
+	cli
+	pusha
+	call PIT_handler_main
 	popa
 	iret
 
