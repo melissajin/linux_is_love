@@ -53,7 +53,7 @@ int32_t free_procs();
 do {                        \
     asm volatile (          \
         "movl %%esp, %0"    \
-        : "=rm" (x)         \
+        : "=m" (x)          \
     );                      \
 } while(0)
 
@@ -61,7 +61,7 @@ do {                        \
 do {                        \
     asm volatile (          \
         "movl %%ebp, %0"    \
-        : "=rm" (x)         \
+        : "=m" (x)          \
     );                      \
 } while(0)
 

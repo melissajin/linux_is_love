@@ -90,7 +90,7 @@ int32_t execute (const uint8_t* command) {
 
         /* set up process paging */
         pd = get_process_pd(pid);
-        pd_init(pd);
+        pd_init(pd, get_current_terminal());
         set_pde(pd, PROG_VM_START, KERNEL_MEM_END + (pid - 1) * SPACE_4MB,
                 FLAG_PS | FLAG_U | FLAG_WE | FLAG_P);
         set_pd(pd);
@@ -125,7 +125,7 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = curr_terminal_running_process() ? (pcb_t *) pcb_start : NULL;
+        pcb->parent_pcb = curr_terminal_running_process() ? pcb_start : NULL;
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);

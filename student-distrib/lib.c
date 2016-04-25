@@ -11,6 +11,8 @@
 #define VGA_BASE 0x3D4
 #define CURSOR_LOW 0x0F
 #define CURSOR_HIGH 0x0E
+#define START_ADDR_REG_HIGH 0x0C
+#define START_ADDR_REG_LOW  0x0D
 
 static int screen_x;
 static int screen_y;
@@ -33,7 +35,17 @@ clear(void)
     }
     screen_x = 0;
     screen_y = 0;
-    move_cursor();
+}
+
+void
+set_vga_start(uint32_t addr) {
+	addr >>= 1;
+
+	outb(START_ADDR_REG_LOW, VGA_BASE);
+	outb(addr & 0xFF, VGA_BASE + 1);
+
+    outb(START_ADDR_REG_HIGH, VGA_BASE);
+	outb((addr >> 8) & 0xFF, VGA_BASE + 1);
 }
 
 int
@@ -57,16 +69,16 @@ set_screen_y(int y) {
 }
 
 void
-move_cursor(void){
+move_cursor(int32_t term_num, uint32_t term_mem_length){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
-	unsigned short position=(screen_y*NUM_COLS) + screen_x;
+	unsigned short position = (screen_y*NUM_COLS) + screen_x + ((term_num * term_mem_length) >> 1);
 
     // cursor LOW port to vga INDEX register
 	outb(CURSOR_LOW, VGA_BASE);
-	outb((unsigned char)(position & 0xFF), VGA_BASE + 1);
+	outb(position & 0xFF, VGA_BASE + 1);
     // cursor HIGH port to vga INDEX register
     outb(CURSOR_HIGH, VGA_BASE);
-	outb((unsigned char)((position>>8) & 0xFF), VGA_BASE + 1);
+	outb((position >> 8) & 0xFF, VGA_BASE + 1);
 }
 
 void
@@ -90,13 +102,11 @@ backspace_fnc(void){
     putc(' ');
     screen_x = NUM_COLS - 1;
     screen_y--;
-    move_cursor();
   }
   else{
     screen_x--;
     putc(' ');
     screen_x--;
-    move_cursor();
   }
 }
 
@@ -280,7 +290,6 @@ putc(uint8_t c)
           screen_y = (screen_y + increment_y + (screen_x / NUM_COLS)) % NUM_ROWS;
         }
     }
-    move_cursor();
 }
 
 /*

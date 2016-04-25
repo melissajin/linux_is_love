@@ -16,6 +16,7 @@ typedef struct {
 	int8_t line_buf[LINE_BUF_MAX];
 	uint16_t buf_count;
 	int32_t input_len;
+	int8_t hit_enter;
 } terminal_t;
 
 extern void kybd_isr();
@@ -128,7 +129,6 @@ static int r_ctrl_key = 0;
 static int l_ctrl_key = 0;
 static int r_alt_key = 0;
 static int l_alt_key = 0;
-static int hit_enter = 0;
 
 /* determine if the key is on */
 static int caps_lock = 0;
@@ -160,8 +160,8 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 
 	/* wait until user hit enter */
 	reading = 1;
-	hit_enter = 0;
-	while(!hit_enter);
+	terminals[current_terminal].hit_enter = 0;
+	while(!terminals[current_terminal].hit_enter);
 
 	cli();
 
@@ -184,7 +184,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	sti();
 
 	reading = 0;
-	hit_enter = 0;
+	terminals[current_terminal].hit_enter = 0;
 	return chars_read;
 }
 
@@ -198,6 +198,8 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	for(i = 0; i < nbytes; i++){
 		putc(((int8_t *) buf)[i]);
 	}
+	move_cursor(current_terminal, PAGE_SIZE);
+
 	return nbytes;
 }
 
@@ -224,8 +226,9 @@ void kybd_init(){
 void update(uint16_t key){
 	if(key == KEY_RETURN){
 		putc(key);
+		move_cursor(current_terminal, PAGE_SIZE);
 		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count++] = '\n';
-		hit_enter = 1;
+		terminals[current_terminal].hit_enter = 1;
 		terminals[current_terminal].input_len = 0;
 		if(!reading) {
 			memset(terminals[current_terminal].line_buf, NULL_CHAR, LINE_BUF_MAX);
@@ -235,6 +238,7 @@ void update(uint16_t key){
 	else if(key == KEY_BACKSPACE){
 		if(terminals[current_terminal].input_len){
 			backspace_fnc();
+			move_cursor(current_terminal, PAGE_SIZE);
 			terminals[current_terminal].buf_count--;
 			terminals[current_terminal].input_len--;
 			terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = NULL_CHAR;
@@ -242,6 +246,7 @@ void update(uint16_t key){
 	}
 	else if(terminals[current_terminal].buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
 		putc(key);
+		move_cursor(current_terminal, PAGE_SIZE);
 		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = key;
 		terminals[current_terminal].buf_count++;
 		terminals[current_terminal].input_len++;
@@ -377,26 +382,26 @@ int32_t start_terminal(uint32_t term_num){
 	if(!free_procs() && next_active_process == -1) return -1;
 	/* update video memory */
 
+	set_vga_start(term_num * PAGE_SIZE);
 	if(curr_active_process != -1) {
 		/* save old terminal cursor */
 		terminals[current_terminal].screen_x = get_screen_x();
 		terminals[current_terminal].screen_y = get_screen_y();
 
 		/* copy video memory to old terminal's backup */
-		memcpy((void *) (VIDEO + (current_terminal + 1) * PAGE_SIZE), (void *) VIDEO, PAGE_SIZE);
+		// memcpy((void *) (VIDEO + (current_terminal + 1) * PAGE_SIZE), (void *) VIDEO, PAGE_SIZE);
 
 		/* copy new terminal's backup to video memory */
-		memcpy((void *) VIDEO, (void *) (VIDEO + (term_num + 1) * PAGE_SIZE), PAGE_SIZE);
+		// memcpy((void *) VIDEO, (void *) (VIDEO + (term_num + 1) * PAGE_SIZE), PAGE_SIZE);
 
 		/* switch page tables */
-		set_terminal_vidmem_pt(current_terminal, current_terminal + 1);
-		if(next_active_process != -1) set_terminal_vidmem_pt(term_num, 0);
-		flush_tlb();
+		// set_terminal_vidmem_pt(current_terminal, current_terminal + 1);
+		// if(next_active_process != -1) set_terminal_vidmem_pt(term_num, 0);
 	
 		/* set new terminal cursor */
 		set_screen_x(terminals[term_num].screen_x);
 		set_screen_y(terminals[term_num].screen_y);
-		move_cursor();
+		move_cursor(term_num, PAGE_SIZE);
 	}
 
 	/* switch processes */
@@ -467,4 +472,8 @@ void set_curr_active_process(int32_t pid) {
 
 int32_t curr_terminal_running_process(){
 	return get_active_process(current_terminal) != -1;
+}
+
+uint32_t get_current_terminal() {
+	return current_terminal;
 }

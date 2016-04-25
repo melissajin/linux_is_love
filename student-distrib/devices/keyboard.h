@@ -185,4 +185,6 @@ void set_curr_active_process(int32_t pid);
 
 int32_t curr_terminal_running_process();
 
+uint32_t get_current_terminal();
+
 #endif
