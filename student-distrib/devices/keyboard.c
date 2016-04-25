@@ -17,6 +17,7 @@ typedef struct {
 	uint16_t buf_count;
 	int32_t input_len;
 	int8_t hit_enter;
+	int8_t reading;
 } terminal_t;
 
 extern void kybd_isr();
@@ -120,8 +121,6 @@ static uint16_t kybd_keys [] = {
 
 static terminal_t terminals[MAX_TERMINALS];
 
-static int reading = 0;
-
 /* determine if the key is pressed */
 static int r_shift_key = 0;
 static int l_shift_key = 0;
@@ -159,7 +158,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 		return -1;
 
 	/* wait until user hit enter */
-	reading = 1;
+	terminals[current_terminal].reading = 1;
 	terminals[current_terminal].hit_enter = 0;
 	while(!terminals[current_terminal].hit_enter);
 
@@ -183,7 +182,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 
 	sti();
 
-	reading = 0;
+	terminals[current_terminal].reading = 0;
 	terminals[current_terminal].hit_enter = 0;
 	return chars_read;
 }
@@ -218,6 +217,7 @@ void kybd_init(){
 		terminals[i].buf_count = 0;
 		terminals[i].screen_x = 0;
 		terminals[i].screen_y = 0;
+		terminals[i].reading = 0;
 	}
 
 	add_device(TERM_FTYPE, &term_fops);
@@ -230,7 +230,7 @@ void update(uint16_t key){
 		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count++] = '\n';
 		terminals[current_terminal].hit_enter = 1;
 		terminals[current_terminal].input_len = 0;
-		if(!reading) {
+		if(!terminals[current_terminal].reading) {
 			memset(terminals[current_terminal].line_buf, NULL_CHAR, LINE_BUF_MAX);
 			terminals[current_terminal].buf_count = 0;
 		}
@@ -288,8 +288,7 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_LALT) l_alt_key = 1;
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
-				if(0 && scancode > MAX_SCANCODE){}//If not valid scancode do nothing
-				else if(!shift && ctrl && key_out == 'l') {
+				if(!shift && ctrl && key_out == 'l') {
 					clear();
 					puts(terminals[current_terminal].line_buf);
 				}
@@ -311,6 +310,7 @@ void keyboard_handler_main(){
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(2);
 				}
+				else if(scancode > MAX_SCANCODE){} //If not valid scancode do nothing
 				else{
 					if((caps_lock ^ shift) && (!alt && !ctrl)
 							&& (key_out >= 'a' && key_out <= 'z'))
