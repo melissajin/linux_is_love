@@ -15,6 +15,7 @@ typedef struct {
 	int screen_x, screen_y;
 	int8_t line_buf[LINE_BUF_MAX];
 	uint16_t buf_count;
+	int32_t input_len;
 } terminal_t;
 
 extern void kybd_isr();
@@ -119,7 +120,6 @@ static uint16_t kybd_keys [] = {
 static terminal_t terminals[MAX_TERMINALS];
 
 static int reading = 0;
-static int input_len = 0;
 
 /* determine if the key is pressed */
 static int r_shift_key = 0;
@@ -226,17 +226,17 @@ void update(uint16_t key){
 		putc(key);
 		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count++] = '\n';
 		hit_enter = 1;
-		input_len = 0;
+		terminals[current_terminal].input_len = 0;
 		if(!reading) {
 			memset(terminals[current_terminal].line_buf, NULL_CHAR, LINE_BUF_MAX);
 			terminals[current_terminal].buf_count = 0;
 		}
 	}
 	else if(key == KEY_BACKSPACE){
-		if(input_len){
+		if(terminals[current_terminal].input_len){
 			backspace_fnc();
 			terminals[current_terminal].buf_count--;
-			input_len--;
+			terminals[current_terminal].input_len--;
 			terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = NULL_CHAR;
 		}
 	}
@@ -244,7 +244,7 @@ void update(uint16_t key){
 		putc(key);
 		terminals[current_terminal].line_buf[terminals[current_terminal].buf_count] = key;
 		terminals[current_terminal].buf_count++;
-		input_len++;
+		terminals[current_terminal].input_len++;
 	}
 }
 
