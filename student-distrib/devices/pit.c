@@ -5,13 +5,14 @@
 #include "../fs.h"
 #include "../process.h"
 #include "../sys_calls.h"
+#include "keyboard.h"
 
 #define PIT_CMD_PORT 0x40
 #define PIT0_DATA_PORT 0x43
 #define PIT_0_RESET 0x31
 #define PIT_0_LATCH 0x00
 #define PIT_IRQ_NUM 0
-#define DEFAULT_RATE 100
+#define DEFAULT_RATE 1000
 #define INPUT_CLK 1193180
 
 #define LOWER_B 0xFF
@@ -21,6 +22,7 @@ extern void pit_isr();
 
 uint8_t pit_ticks = 0;
 uint16_t pit_rate = 0;
+uint32_t running_term = 0;
 
 //initializes the pit
 void pit_init(){
@@ -39,9 +41,11 @@ void pit_init(){
 
 //pit interrupt handler
 void PIT_handler_main(){
-	if(pit_ticks++ == 9){ //10 ticks is an arbitrary number maybe 5ish?
-		pit_ticks = 0;
-	}
+	int32_t prev_pid, next_pid, i;
+	pcb_t * prev, * next;
+	// if(pit_ticks++ == 9){ //10 ticks is an arbitrary number maybe 5ish?
+	// 	pit_ticks = 0;
+	// }
 	//resets the counter for the timer
 	cli();
 	outb(PIT_0_RESET, PIT_CMD_PORT);
@@ -50,6 +54,22 @@ void PIT_handler_main(){
 	sti();
 	
   	send_eoi(PIT_IRQ_NUM);
+
+  	/* context switch */
+  	prev_pid = get_active_process(running_term);
+  	running_term = (running_term + 1) % MAX_TERMINALS;
+  	if(prev_pid == -1) return;
+
+  	for(i = running_term + 1; i < MAX_TERMINALS + running_term + 1; i++) {
+  		next_pid = get_active_process(i % MAX_TERMINALS);
+  		if(next_pid != -1) break;
+  	}
+  	if(prev_pid == next_pid) return;
+
+  	prev = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (prev_pid + 1));
+  	next = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_pid + 1));
+
+	context_switch(prev, next);
 }
 
 //sets the counter to rate(hz), change will happen after the most recent tick is done

@@ -73,6 +73,8 @@ int32_t execute (const uint8_t* command) {
     fops_t * term_fops;
     uint32_t * pd;
 
+    cli();
+
     parse_arg(command, command_buf, args);
 
     /* check for valid executable */
