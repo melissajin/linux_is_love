@@ -387,20 +387,11 @@ int32_t start_terminal(uint32_t term_num){
 		/* save old terminal cursor */
 		terminals[current_terminal].screen_x = get_screen_x();
 		terminals[current_terminal].screen_y = get_screen_y();
-
-		/* copy video memory to old terminal's backup */
-		// memcpy((void *) (VIDEO + (current_terminal + 1) * PAGE_SIZE), (void *) VIDEO, PAGE_SIZE);
-
-		/* copy new terminal's backup to video memory */
-		// memcpy((void *) VIDEO, (void *) (VIDEO + (term_num + 1) * PAGE_SIZE), PAGE_SIZE);
-
-		/* switch page tables */
-		// set_terminal_vidmem_pt(current_terminal, current_terminal + 1);
-		// if(next_active_process != -1) set_terminal_vidmem_pt(term_num, 0);
 	
 		/* set new terminal cursor */
 		set_screen_x(terminals[term_num].screen_x);
 		set_screen_y(terminals[term_num].screen_y);
+		
 		move_cursor(term_num, PAGE_SIZE);
 	}
 
