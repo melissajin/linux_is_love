@@ -11,16 +11,6 @@
 #include "../sys_calls.h"
 #include "../virtualmem.h"
 
-typedef struct {
-	int screen_x, screen_y;
-	char * video_mem;
-	int8_t line_buf[LINE_BUF_MAX];
-	uint16_t buf_count;
-	int32_t input_len;
-	int8_t hit_enter;
-	int8_t reading;
-} terminal_t;
-
 extern void kybd_isr();
 
 static int32_t terminal_open(const uint8_t* filename);
@@ -241,7 +231,7 @@ void update(uint16_t key){
 		putc_in_terminal(key,
 			&(curr_term -> screen_x),
 			&(curr_term -> screen_y),
-			curr_term -> video_mem
+			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
 		move_cursor(current_terminal, curr_term -> screen_x, 
 			curr_term -> screen_y, PAGE_SIZE);
@@ -257,7 +247,7 @@ void update(uint16_t key){
 		if(curr_term -> input_len){
 			backspace_fnc(&(curr_term -> screen_x),
 				&(curr_term -> screen_y),
-				curr_term -> video_mem
+				curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 			);
 			move_cursor(current_terminal, curr_term -> screen_x, 
 				curr_term -> screen_y, PAGE_SIZE);
@@ -270,7 +260,7 @@ void update(uint16_t key){
 		putc_in_terminal(key,
 			&(curr_term -> screen_x),
 			&(curr_term -> screen_y),
-			curr_term -> video_mem
+			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
 		move_cursor(current_terminal, curr_term -> screen_x, 
 			curr_term -> screen_y, PAGE_SIZE);
@@ -476,4 +466,8 @@ int32_t curr_terminal_running_process(){
 
 uint32_t get_current_terminal() {
 	return current_terminal;
+}
+
+terminal_t * get_terminal(int32_t term_num) {
+	return &(terminals[term_num]);
 }

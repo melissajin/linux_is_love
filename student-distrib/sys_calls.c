@@ -24,6 +24,8 @@ int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp;
 
+    cli();
+
     pcb(pcb_child_ptr);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 

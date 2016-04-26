@@ -40,6 +40,9 @@ void virtualmem_init()
 
 	for(i = 0; i < MAX_TERMINALS; i++) {
 		pt_vidmem[i][VIDEO >> PTE_IDX_OFFS & PTE_IDX_MASK] = (VIDEO + i * PAGE_SIZE) | FLAG_WE | FLAG_P;
+		for(j = 0; j < MAX_TERMINALS; j++) {
+			pt_vidmem[i][(VIDEO + (j + 1) * PAGE_SIZE) >> PTE_IDX_OFFS & PTE_IDX_MASK] = (VIDEO + j * PAGE_SIZE) | FLAG_WE | FLAG_P;
+		}
 		pt_user_vidmem[i][PROG_VIDMEM_ADDR >> PTE_IDX_OFFS & PTE_IDX_MASK] = (VIDEO + i * PAGE_SIZE) | FLAG_WE | FLAG_U | FLAG_P;
 	}
 
