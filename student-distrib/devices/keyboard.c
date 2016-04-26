@@ -424,27 +424,26 @@ int32_t start_terminal(uint32_t term_num){
 
 		if(curr_active_process != -1) {
 			asm volatile("					\n\
-				pushfl						\n\
-				pushl	%%ebp				\n\
+				pushl	$1f					\n\
+				movl	%%ebp, %[prev_ebp]	\n\
 				movl	%%esp, %[prev_esp]	\n\
-				movl	$1f, %[prev_eip]	\n\
-				pushl	%[shell_ptr]		\n\
-				exec:						\n\
-				call	execute				\n\
-				jmp		exec				\n\
+				#movl	$1f, %[prev_eip]	\n\
+				#pushl	%[shell_ptr]		\n\
+				#exec:						\n\
+				#call	execute				\n\
+				#jmp		exec				\n\
 											\n\
 				1:							\n\
-				popl	%%ebp				\n\
-				popfl						\n\
+				# movl	%[prev_ebp], %%ebp	\n\
 				"
 				: [prev_esp] "=m" (curr_pcb -> context.esp),
-				  [prev_eip] "=m" (curr_pcb -> context.eip)
+				  [prev_eip] "=m" (curr_pcb -> context.eip),
+				  [prev_ebp] "=m" (curr_pcb -> context.ebp)
 				: [shell_ptr] "r" (shell)
 			);
-		} else {
+		}
 			while(1)
 				execute(shell);
-		}
 	}else{
 		/* terminal already initialized */
 		next_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_active_process + 1));

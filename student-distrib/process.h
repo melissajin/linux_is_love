@@ -23,7 +23,7 @@ typedef struct {
 } fd_t;
 
 typedef struct {
-    uint32_t esp, eip, esp0;
+    uint32_t esp, eip, esp0, ebp;
 } context_t;
 
 typedef struct pcb {

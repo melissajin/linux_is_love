@@ -42,6 +42,8 @@ void PIT_handler_main(){
 	int32_t prev_pid, next_pid, running_term, i;
 	pcb_t * prev, * next;
 
+	send_eoi(PIT_IRQ_NUM);
+
 	/* scheduling logic */
   	pcb(prev);
   	prev_pid = prev -> pid;
@@ -59,8 +61,9 @@ void PIT_handler_main(){
 	outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
 	outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
 	
-  	send_eoi(PIT_IRQ_NUM);
+  	// send_eoi(PIT_IRQ_NUM);
 
+	if(!processes()) return;
   	if(prev_pid == next_pid) return;
 
 	context_switch(prev, next);
