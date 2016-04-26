@@ -12,7 +12,7 @@
 #define PIT_0_RESET 0x31
 #define PIT_0_LATCH 0x00
 #define PIT_IRQ_NUM 0
-#define DEFAULT_RATE 1000
+#define DEFAULT_RATE 50
 #define INPUT_CLK 1193180
 
 #define LOWER_B 0xFF
@@ -20,9 +20,7 @@
 
 extern void pit_isr();
 
-uint8_t pit_ticks = 0;
 uint16_t pit_rate = 0;
-uint32_t running_term = 0;
 
 //initializes the pit
 void pit_init(){
@@ -41,33 +39,29 @@ void pit_init(){
 
 //pit interrupt handler
 void PIT_handler_main(){
-	int32_t prev_pid, next_pid, i;
+	int32_t prev_pid, next_pid, running_term, i;
 	pcb_t * prev, * next;
-	// if(pit_ticks++ == 9){ //10 ticks is an arbitrary number maybe 5ish?
-	// 	pit_ticks = 0;
-	// }
+
+	/* scheduling logic */
+  	pcb(prev);
+  	prev_pid = prev -> pid;
+  	running_term = prev -> term_num;
+
+  	for(i = 1; i <= MAX_TERMINALS; i++) {
+  		next_pid = get_active_process((running_term + i) % MAX_TERMINALS);
+  		if(next_pid != -1) break;
+  	}
+
+  	next = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_pid + 1));
+
 	//resets the counter for the timer
-	cli();
 	outb(PIT_0_RESET, PIT_CMD_PORT);
 	outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
 	outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
-	sti();
 	
   	send_eoi(PIT_IRQ_NUM);
 
-  	/* context switch */
-  	prev_pid = get_active_process(running_term);
-  	running_term = (running_term + 1) % MAX_TERMINALS;
-  	if(prev_pid == -1) return;
-
-  	for(i = running_term + 1; i < MAX_TERMINALS + running_term + 1; i++) {
-  		next_pid = get_active_process(i % MAX_TERMINALS);
-  		if(next_pid != -1) break;
-  	}
   	if(prev_pid == next_pid) return;
-
-  	prev = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (prev_pid + 1));
-  	next = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_pid + 1));
 
 	context_switch(prev, next);
 }

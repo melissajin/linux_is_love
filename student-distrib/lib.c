@@ -58,6 +58,11 @@ get_screen_y() {
 	return screen_y;
 }
 
+char *
+get_video_mem() {
+	return video_mem;
+}
+
 void
 set_screen_x(int x) {
 	screen_x = x;
@@ -69,7 +74,12 @@ set_screen_y(int y) {
 }
 
 void
-move_cursor(int32_t term_num, uint32_t term_mem_length){
+set_video_mem(char * mem) {
+	video_mem = mem;
+}
+
+void
+move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_length){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
 	unsigned short position = (screen_y*NUM_COLS) + screen_x + ((term_num * term_mem_length) >> 1);
 
@@ -95,18 +105,31 @@ vert_scroll(void){
 }
 
 void
-backspace_fnc(void){
-  if(screen_x == 0){
-    screen_x = NUM_COLS - 1;
-    screen_y--;
-    putc(' ');
-    screen_x = NUM_COLS - 1;
-    screen_y--;
+vert_scroll_in_terminal(char * video_mem){
+  int32_t i;
+  for(i=0; i<(NUM_ROWS - 1)*NUM_COLS; i++) {
+    *(uint8_t *)(video_mem + (i << 1)) = *(uint8_t *)(video_mem + ((i + NUM_COLS) << 1));
+    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+  }
+  for(i=(NUM_ROWS - 1)*NUM_COLS; i<NUM_ROWS*NUM_COLS; i++){
+    *(uint8_t *)(video_mem + (i << 1)) = ' ';
+    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+  }
+}
+
+void
+backspace_fnc(int * screen_x, int * screen_y, char * video_mem){
+  if(*screen_x == 0){
+    *screen_x = NUM_COLS - 1;
+    (*screen_y)--;
+    putc_in_terminal(' ', screen_x, screen_y, video_mem);
+    *screen_x = NUM_COLS - 1;
+    (*screen_y)--;
   }
   else{
-    screen_x--;
-    putc(' ');
-    screen_x--;
+    (*screen_x)--;
+    putc_in_terminal(' ', screen_x, screen_y, video_mem);
+    (*screen_x)--;
   }
 }
 
@@ -288,6 +311,33 @@ putc(uint8_t c)
         }
         else{
           screen_y = (screen_y + increment_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        }
+    }
+}
+
+void
+putc_in_terminal(uint8_t c, int * screen_x, int * screen_y, char * video_mem)
+{
+    int increment_y = 0;
+    if(c == '\n' || c == '\r') {
+        (*screen_y)++;
+        *screen_x=0;
+        if(*screen_y > NUM_ROWS - 1){
+          vert_scroll_in_terminal(video_mem);
+          *screen_y = NUM_ROWS - 1;
+        }
+    } else {
+        *(uint8_t *)(video_mem + ((NUM_COLS* (*screen_y) + *screen_x) << 1)) = c;
+        *(uint8_t *)(video_mem + ((NUM_COLS* (*screen_y) + *screen_x) << 1) + 1) = ATTRIB;
+        (*screen_x)++;
+        if(*screen_x > NUM_COLS - 1) increment_y = 1;
+        *screen_x %= NUM_COLS;
+        if((*screen_y + increment_y + (*screen_x / NUM_COLS)) > NUM_ROWS - 1){
+          vert_scroll_in_terminal(video_mem);
+          *screen_y = NUM_ROWS - 1;
+        }
+        else{
+          *screen_y = (*screen_y + increment_y + (*screen_x / NUM_COLS)) % NUM_ROWS;
         }
     }
 }

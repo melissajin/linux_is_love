@@ -134,6 +134,7 @@ int32_t execute (const uint8_t* command) {
 
         pcb -> pd = pd;
         pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
+        pcb -> term_num = get_current_terminal();
 
         set_curr_active_process(pid);
 
