@@ -113,10 +113,10 @@ void context_switch(pcb_t * prev, pcb_t * next) {
 		movl	%%esp, %[prev_esp]			\n\
 		movl	%[next_esp], %%esp			\n\
 		movl	%[next_ebp], %%ebp 			\n\
-		# movl	$1f, %[prev_eip]			\n\
+		movl	$1f, %[prev_eip]			\n\
 		movl	%[next_esp0], %[tss_esp0]	\n\
-		# pushl	%[next_eip]					\n\
-		# ret									\n\
+		pushl	%[next_eip]					\n\
+		ret									\n\
 											\n\
 		1:									\n\
 		# movl	%[prev_ebp], %%ebp			\n\

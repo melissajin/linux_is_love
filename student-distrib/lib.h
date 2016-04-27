@@ -17,6 +17,7 @@ int8_t *itoa(uint32_t value, int8_t* buf, int32_t radix);
 int8_t *strrev(int8_t* s);
 uint32_t strlen(const int8_t* s);
 void clear(void);
+void clear_terminal(int * screen_x, int * screen_y, char * video_mem);
 void move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_length);
 void vert_scroll(void);
 void vert_scroll_in_terminal(char * video_mem);

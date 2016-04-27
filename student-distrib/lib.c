@@ -38,6 +38,18 @@ clear(void)
 }
 
 void
+clear_terminal(int * screen_x, int * screen_y, char * video_mem)
+{
+    int32_t i;
+    for(i=0; i<NUM_ROWS*NUM_COLS; i++) {
+        *(uint8_t *)(video_mem + (i << 1)) = ' ';
+        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    }
+    *screen_x = 0;
+    *screen_y = 0;
+}
+
+void
 set_vga_start(uint32_t addr) {
 	addr >>= 1;
 

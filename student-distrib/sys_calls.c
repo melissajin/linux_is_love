@@ -5,6 +5,7 @@
 #include "process.h"
 #include "x86_desc.h"
 #include "devices/keyboard.h"
+#include "devices/pit.h"
 
 #define PROG_VM_START   0x8000000
 #define SPACE_4MB       0x400000
@@ -129,14 +130,20 @@ int32_t execute (const uint8_t* command) {
         }
 
         pcb->pid = pid;
-        pcb->parent_pcb = curr_terminal_running_process() ? pcb_start : NULL;
+        if(curr_terminal_running_process()){
+            pcb -> parent_pcb = pcb_start;
+            pcb -> term_num = pcb_start -> term_num;
+        } else {
+            pcb->parent_pcb = NULL;
+            pcb -> term_num = get_current_terminal();
+        }
+       
 
         pcb -> args_len = strlen((int8_t *) args);
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
 
         pcb -> pd = pd;
         pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
-        pcb -> term_num = get_current_terminal();
 
         set_curr_active_process(pid);
 

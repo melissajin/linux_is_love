@@ -291,7 +291,7 @@ rtc_isr:		#A handler/assembly linkage for the rtc just saves state of machine
 pit_isr:
 	cli
 	pusha
-	call PIT_handler_main
+	call pit_handler_main
 	popa
 	iret
 

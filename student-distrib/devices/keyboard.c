@@ -3,6 +3,7 @@
  */
 
 #include "keyboard.h"
+#include "pit.h"
 #include "../i8259.h"
 #include "../idt_set.h"
 #include "../lib.h"
@@ -10,6 +11,7 @@
 #include "../process.h"
 #include "../sys_calls.h"
 #include "../virtualmem.h"
+#include "../x86_desc.h"
 
 extern void kybd_isr();
 
@@ -307,9 +309,9 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
 				if(!shift && ctrl && key_out == 'l') {
-					clear();
-					terminals[current_terminal].screen_x = 0;
-					terminals[current_terminal].screen_y = 0;
+					clear_terminal(&(terminals[current_terminal].screen_x),
+						&(terminals[current_terminal].screen_y),
+						terminals[current_terminal].video_mem);
 					for(i = 0; i < terminals[current_terminal].buf_count; i++){
 						putc_in_terminal(((int8_t *) terminals[current_terminal].line_buf)[i],
 							&(terminals[current_terminal].screen_x),
@@ -329,14 +331,17 @@ void keyboard_handler_main(){
 				else if(alt && key_out == KEY_F1) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(0);
+					return;
 				}
 				else if(alt && key_out == KEY_F2) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(1);
+					return;
 				}
 				else if(alt && key_out == KEY_F3) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(2);
+					return;
 				}
 				else if(scancode > MAX_SCANCODE){} //If not valid scancode do nothing
 				else{
@@ -399,7 +404,6 @@ void keyboard_handler_main(){
 
 int32_t start_terminal(uint32_t term_num){
 	int32_t curr_active_process, next_active_process;
-	pcb_t * curr_pcb, * next_pcb;
 
 	if(term_num < 0 || term_num >= MAX_TERMINALS) return -1;
 	if(term_num == current_terminal) return -1;
@@ -416,40 +420,17 @@ int32_t start_terminal(uint32_t term_num){
 
 	/* switch processes */
 	current_terminal = term_num;
-	curr_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (curr_active_process + 1));
 	if(next_active_process == -1){
 		/* terminal not initialized */
 		/* start shell in terminal */
 		uint8_t shell[] = "shell";
 
 		if(curr_active_process != -1) {
-			asm volatile("					\n\
-				pushl	$1f					\n\
-				movl	%%ebp, %[prev_ebp]	\n\
-				movl	%%esp, %[prev_esp]	\n\
-				#movl	$1f, %[prev_eip]	\n\
-				#pushl	%[shell_ptr]		\n\
-				#exec:						\n\
-				#call	execute				\n\
-				#jmp		exec				\n\
-											\n\
-				1:							\n\
-				# movl	%[prev_ebp], %%ebp	\n\
-				"
-				: [prev_esp] "=m" (curr_pcb -> context.esp),
-				  [prev_eip] "=m" (curr_pcb -> context.eip),
-				  [prev_ebp] "=m" (curr_pcb -> context.ebp)
-				: [shell_ptr] "r" (shell)
-			);
-		}
+			schedule_for_execution(shell);
+		} else {
 			while(1)
 				execute(shell);
-	}else{
-		/* terminal already initialized */
-		next_pcb = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_active_process + 1));
-
-		/* run terminal's active process */
-		context_switch(curr_pcb, next_pcb);
+		}
 	}
 
 	return 0;
