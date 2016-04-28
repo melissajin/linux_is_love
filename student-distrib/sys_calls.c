@@ -25,7 +25,7 @@ int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp;
 
-    // cli();
+    cli();
 
     pcb(pcb_child_ptr);
     // pcb_child_ptr = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (get_curr_active_process() + 1));
@@ -81,7 +81,7 @@ int32_t execute (const uint8_t* command) {
     fops_t * term_fops;
     uint32_t * pd;
 
-    // cli();
+    cli();
 
     parse_arg(command, command_buf, args);
 
@@ -99,9 +99,9 @@ int32_t execute (const uint8_t* command) {
         vm_end = PROG_VM_START + SPACE_4MB - WORD_SIZE;
 
         /* starting address of current pcb */
-        pcb(pcb_start);
-        // parent_pid = get_curr_active_process();
-        // pcb_start = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (parent_pid + 1));
+        // pcb(pcb_start);
+        parent_pid = get_curr_active_process();
+        pcb_start = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (parent_pid + 1));
 
         /* get terminal fops */
         term_fops = get_device_fops(TERM_FTYPE);

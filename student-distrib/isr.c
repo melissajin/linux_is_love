@@ -125,7 +125,7 @@ void isrs_install(){
 	set_trap_gate(29,  (unsigned long) isr29);
 	set_trap_gate(30,  (unsigned long) isr30);
 	set_trap_gate(31,  (unsigned long) isr31);
-	set_sys_int_gate(0x80, (unsigned long) sys_call);
+	set_sys_gate(0x80, (unsigned long) sys_call);
 }
 /*fault_handler
  *DESC: C-function that handles any exceptions, called by an assembly linkage

@@ -94,6 +94,7 @@ void pit_handler_main(){
 
 	pit_reset_count();
 
+	// if(prev_pid == get_curr_active_process() && next -> parent_pcb == NULL) return;
   	if(prev_pid == next_pid) return;
 
 	// context_switch(prev, next);
@@ -103,8 +104,6 @@ void pit_handler_main(){
 		movl	%[next_esp], %%esp			\n\
 		movl	%[next_ebp], %%ebp 			\n\
 		movl	%[next_esp0], %[tss_esp0]	\n\
-		# popa								\n\
-		# iret								\n\
 		"
 		: [tss_esp0] "=m" (tss.esp0)
 		: [next_esp] "rm" (next -> context.esp),

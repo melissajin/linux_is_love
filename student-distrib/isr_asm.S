@@ -301,7 +301,6 @@ pit_isr:
 	iret
 
 sys_call:		#preparing argument for handle_syscall
-	cli
 	jmp handle_syscall
 
 .end

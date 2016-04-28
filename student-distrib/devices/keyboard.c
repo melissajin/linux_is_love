@@ -142,18 +142,21 @@ int32_t terminal_close(int32_t fd){
 
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	int diff, chars_read;
+	pcb_t * pcb;
+	int32_t term_num;
 
 	/* Check for null pointer */
 	if(buf == NULL)
 		return -1;
 
+	pcb(pcb);
+	term_num = pcb -> term_num;
+
 	/* wait until user hit enter */
-	terminals[current_terminal].reading = 1;
-	terminals[current_terminal].hit_enter = 0;
+	terminals[term_num].reading = 1;
+	terminals[term_num].hit_enter = 0;
 
-	sti();
-
-	while(!terminals[current_terminal].hit_enter);
+	while(!terminals[term_num].hit_enter);
 
 	cli();
 
@@ -161,22 +164,22 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	if(nbytes > LINE_BUF_MAX) nbytes = LINE_BUF_MAX;
 
 	/* read nbytes from line buffer */
-	diff = terminals[current_terminal].buf_count - nbytes;
-	chars_read = nbytes > terminals[current_terminal].buf_count ?
-			terminals[current_terminal].buf_count : nbytes;
+	diff = terminals[term_num].buf_count - nbytes;
+	chars_read = nbytes > terminals[term_num].buf_count ?
+			terminals[term_num].buf_count : nbytes;
 	if(diff < 0) diff = 0;
-	memcpy(buf, terminals[current_terminal].line_buf, nbytes);
+	memcpy(buf, terminals[term_num].line_buf, nbytes);
 
 	/* move unread bytes in line buffer to beginning */
-	memmove(terminals[current_terminal].line_buf, terminals[current_terminal].line_buf + nbytes, diff);
+	memmove(terminals[term_num].line_buf, terminals[term_num].line_buf + nbytes, diff);
 	/* clear rest of line buffer */
-	memset(terminals[current_terminal].line_buf + diff, NULL_CHAR, nbytes);
-	terminals[current_terminal].buf_count = diff;
+	memset(terminals[term_num].line_buf + diff, NULL_CHAR, nbytes);
+	terminals[term_num].buf_count = diff;
 
-	// sti();
+	sti();
 
-	terminals[current_terminal].reading = 0;
-	terminals[current_terminal].hit_enter = 0;
+	terminals[term_num].reading = 0;
+	terminals[term_num].hit_enter = 0;
 	return chars_read;
 }
 
