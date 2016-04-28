@@ -4,7 +4,6 @@
 #include "x86_desc.h"
 
 #define MAX_DEVICES		6
-#define MAX_PROCESSES	6
 
 static uint32_t proc_count = 0;
 static uint8_t procs[MAX_PROCESSES] = {0};
