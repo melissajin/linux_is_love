@@ -150,6 +150,9 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	/* wait until user hit enter */
 	terminals[current_terminal].reading = 1;
 	terminals[current_terminal].hit_enter = 0;
+
+	sti();
+
 	while(!terminals[current_terminal].hit_enter);
 
 	cli();
@@ -170,7 +173,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	memset(terminals[current_terminal].line_buf + diff, NULL_CHAR, nbytes);
 	terminals[current_terminal].buf_count = diff;
 
-	sti();
+	// sti();
 
 	terminals[current_terminal].reading = 0;
 	terminals[current_terminal].hit_enter = 0;
@@ -438,6 +441,10 @@ int32_t start_terminal(uint32_t term_num){
 
 void set_curr_active_process(int32_t pid) {
 	set_active_process(current_terminal, pid);
+}
+
+int32_t get_curr_active_process() {
+	return get_active_process(current_terminal);
 }
 
 int32_t curr_terminal_running_process(){

@@ -183,11 +183,8 @@ entry (unsigned long magic, unsigned long addr)
 	sti();
 
 	/* Execute the first program (`shell') ... */
-	while(1) {
-		clear();
-		// execute((uint8_t *) "shell");
-		start_terminal(0);
-	}
+	clear();
+	start_terminal(0);
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");

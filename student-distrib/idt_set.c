@@ -8,7 +8,7 @@ void set_int_gate(unsigned long n, unsigned long addr){
 	idt[n].reserved0 = 0;
 	idt[n].reserved1 = 1;
 	idt[n].reserved2 = 1;
-	idt[n].reserved3 = 1;
+	idt[n].reserved3 = 0;
 	idt[n].size = 1;
 	idt[n].dpl = 0;
 	
@@ -22,7 +22,7 @@ void set_sys_gate(unsigned long n, unsigned long addr){
 	idt[n].reserved0 = 0;
 	idt[n].reserved1 = 1;
 	idt[n].reserved2 = 1;
-	idt[n].reserved3 = 0;
+	idt[n].reserved3 = 1;
 	idt[n].size = 1;
 	idt[n].dpl = 3;
 	
@@ -36,7 +36,7 @@ void set_sys_int_gate(unsigned long n, unsigned long addr){
 	idt[n].reserved0 = 0;
 	idt[n].reserved1 = 1;
 	idt[n].reserved2 = 1;
-	idt[n].reserved3 = 1;
+	idt[n].reserved3 = 0;
 	idt[n].size = 1;
 	idt[n].dpl = 3;
 	
@@ -49,7 +49,7 @@ void set_trap_gate(unsigned long n, unsigned long addr){
 	idt[n].reserved0 = 0;
 	idt[n].reserved1 = 1;
 	idt[n].reserved2 = 1;
-	idt[n].reserved3 = 0;
+	idt[n].reserved3 = 1;
 	idt[n].size = 1;
 	idt[n].dpl = 0;
 	

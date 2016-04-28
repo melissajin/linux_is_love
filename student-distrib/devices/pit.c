@@ -22,7 +22,9 @@
 
 extern void pit_isr();
 
-static void run(pcb_t * prev, uint8_t * command);
+extern uint32_t temp_esp;
+
+static void pit_reset_count();
 
 uint16_t pit_rate = 0;
 uint8_t * next_execute = NULL;
@@ -34,9 +36,7 @@ void pit_init(){
 	pit_rate = INPUT_CLK / DEFAULT_RATE;
 
 	cli();
-	outb(PIT_0_RESET,PIT_CMD_PORT);
-	outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
-	outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
+	pit_reset_count();
 	sti();
 
 	enable_irq(PIT_IRQ_NUM);
@@ -50,21 +50,35 @@ void pit_handler_main(){
 
 	send_eoi(PIT_IRQ_NUM);
 
+	if(!processes()) {
+		pit_reset_count();
+		return;
+	}
+
 	pcb(prev);
+	// prev = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (get_curr_active_process() + 1));
+
+	/* save prev esp in correct varable */
+	// if(temp_esp != 0){
+	// 	prev -> context.esp = temp_esp;
+	// 	temp_esp = 0;
+	// }
+	asm volatile("							\n\
+		movl	%%esp, %[prev_esp]			\n\
+		movl	%%ebp, %[prev_ebp]			\n\
+		"
+		: [prev_esp] "=m" (prev -> context.esp),
+		  [prev_ebp] "=m" (prev -> context.ebp)
+	);
 
 	/* if execution scheduled */
 	if(next_execute != NULL) {
 		command = next_execute;
 		next_execute = NULL;
 
-		//resets the counter for the timer
-		outb(PIT_0_RESET, PIT_CMD_PORT);
-		outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
-		outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
+		pit_reset_count();
 
-		run(prev, command);
-
-		return;
+		execute((uint8_t *) "shell");
 	}
 
 	/* scheduling logic */
@@ -78,18 +92,25 @@ void pit_handler_main(){
 
   	next = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_pid + 1));
 
-	//resets the counter for the timer
-	outb(PIT_0_RESET, PIT_CMD_PORT);
-	outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
-	outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
-	
-  	// send_eoi(PIT_IRQ_NUM);
+	pit_reset_count();
 
-  	if(!processes()) return;
-  	if(next_pid == -1) return;
   	if(prev_pid == next_pid) return;
 
-	context_switch(prev, next);
+	// context_switch(prev, next);
+	set_pd(next -> pd);
+
+	asm volatile("							\n\
+		movl	%[next_esp], %%esp			\n\
+		movl	%[next_ebp], %%ebp 			\n\
+		movl	%[next_esp0], %[tss_esp0]	\n\
+		# popa								\n\
+		# iret								\n\
+		"
+		: [tss_esp0] "=m" (tss.esp0)
+		: [next_esp] "rm" (next -> context.esp),
+		  [next_ebp] "rm" (next -> context.ebp),
+		  [next_esp0] "r" (next -> context.esp0)
+	);
 }
 
 //sets the counter to rate(hz), change will happen after the most recent tick is done
@@ -112,26 +133,12 @@ uint16_t pit_get_count(){
 	return retval | temp;
 }
 
-void schedule_for_execution(uint8_t * command) {
-	next_execute = command;
+void pit_reset_count() {
+	outb(PIT_0_RESET, PIT_CMD_PORT);
+	outb((uint8_t)(pit_rate & LOWER_B), PIT0_DATA_PORT);
+	outb((uint8_t)(pit_rate >> UPPER_B), PIT0_DATA_PORT);
 }
 
-void run(pcb_t * prev, uint8_t * command) {
-	asm volatile("					\n\
-		movl	%%ebp, %[prev_ebp]	\n\
-		movl	%%esp, %[prev_esp]	\n\
-		movl	$1f, %[prev_eip]	\n\
-		pushl	%[cmd_ptr]			\n\
-		exec:						\n\
-		call	execute				\n\
-		jmp		exec				\n\
-									\n\
-		1:							\n\
-		# movl	%[prev_ebp], %%ebp	\n\
-		"
-		: [prev_esp] "=m" (prev -> context.esp),
-		  [prev_eip] "=m" (prev -> context.eip),
-		  [prev_ebp] "=m" (prev -> context.ebp)
-		: [cmd_ptr] "r" (command)
-	);
+void schedule_for_execution(uint8_t * command) {
+	next_execute = command;
 }

@@ -109,17 +109,18 @@ void context_switch(pcb_t * prev, pcb_t * next) {
 	set_pd(next -> pd);
 
 	asm volatile("							\n\
-		movl	%%ebp, %[prev_ebp]			\n\
-		movl	%%esp, %[prev_esp]			\n\
+		# movl	%%ebp, %[prev_ebp]			\n\
+		# movl	%%esp, %[prev_esp]			\n\
 		movl	%[next_esp], %%esp			\n\
-		movl	%[next_ebp], %%ebp 			\n\
-		movl	$1f, %[prev_eip]			\n\
+		# movl	%[next_ebp], %%ebp 			\n\
+		# movl	$1f, %[prev_eip]			\n\
 		movl	%[next_esp0], %[tss_esp0]	\n\
-		pushl	%[next_eip]					\n\
-		ret									\n\
-											\n\
+		# pushl	%[next_eip]					\n\
+		# ret									\n\
+		 									\n\
 		1:									\n\
-		# movl	%[prev_ebp], %%ebp			\n\
+		# popa								\n\
+		# iret								\n\
 		"
 		: [prev_esp] "=m" (prev -> context.esp),
 		  [prev_eip] "=m" (prev -> context.eip),
