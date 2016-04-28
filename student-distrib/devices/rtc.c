@@ -8,6 +8,7 @@
 #include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
+#include "keyboard.h"
 
 #define RTC_REG_PORT 0x70  /* Port for specifying reg and disabling NMI */
 #define RW_CMOS_PORT 0x71  /* Port used to read from or write to CMOS */
@@ -30,7 +31,8 @@ static int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes);
 static int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes);
 static int32_t rtc_close(int32_t fd);
 
-static int reading, open = 0;
+static int open = 0;
+static int reading[MAX_TERMINALS];
 
 static fops_t rtc_fops = {
     .read = rtc_read,
@@ -47,15 +49,15 @@ void rtc_init() {
 }
 
 void rtc_handler_main() {
- 
-  //test_interrupts();
-  // Reset the C register to get the next interrupt
-  outb(REG_C, RTC_REG_PORT);
-  inb(RW_CMOS_PORT);
+    int i;
 
-  reading = 0;
+    //test_interrupts();
+    // Reset the C register to get the next interrupt
+    send_eoi(RTC_IRQ_NUM);
+    outb(REG_C, RTC_REG_PORT);
+    inb(RW_CMOS_PORT);
 
-  send_eoi(RTC_IRQ_NUM);
+    for(i = 0; i < MAX_TERMINALS; i++) reading[i] = 0;
 }
 
 /* open rtc */
@@ -72,8 +74,9 @@ int32_t rtc_open(const uint8_t * filename) {
         sti();
 
         enable_irq(RTC_IRQ_NUM);
-        open = 1;
     }
+
+    open++;
 
     /* default rate to 2 Hz */
     cli();
@@ -88,9 +91,15 @@ int32_t rtc_open(const uint8_t * filename) {
 
 /* wait until next rtc interrupt */
 int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes) {
-    reading = 1;
-    while(reading);  /* spin until an interrupt happens */
-    reading = 1;
+    pcb_t * pcb;
+    int32_t term_num;
+
+    pcb(pcb);
+    term_num = pcb -> term_num;
+
+    reading[term_num] = 1;
+    while(reading[term_num]);  /* spin until an interrupt happens */
+    reading[term_num] = 1;
     return 0;
 }
 
@@ -133,17 +142,20 @@ int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes) {
 /* close rtc */
 int32_t rtc_close(int32_t fd) {
     char curr;
-    disable_irq(RTC_IRQ_NUM);
 
-    /* turn off RTC interrupts */
-    cli();
-    outb(NMI_DISABLE | REG_B, RTC_REG_PORT);
-    curr = inb(RW_CMOS_PORT);
-    outb(NMI_DISABLE | REG_B, RTC_REG_PORT);
-    outb(curr & ~INT_FLAG, RW_CMOS_PORT);  /* turn off bit 6 of register B */
-    sti();
+    open--;
 
-    open = 0;
+    if(!open) {
+        disable_irq(RTC_IRQ_NUM);
+
+        /* turn off RTC interrupts */
+        cli();
+        outb(NMI_DISABLE | REG_B, RTC_REG_PORT);
+        curr = inb(RW_CMOS_PORT);
+        outb(NMI_DISABLE | REG_B, RTC_REG_PORT);
+        outb(curr & ~INT_FLAG, RW_CMOS_PORT);  /* turn off bit 6 of register B */
+        sti();
+    }
 
     return 0;
 }
