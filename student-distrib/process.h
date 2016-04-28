@@ -5,6 +5,8 @@
 #include "types.h"
 #include "devices/keyboard.h"
 
+#define MAX_PROCESSES   6
+
 #define PROG_VIDMEM_ADDR 0x8400000
 
 #define FILE_ARRAY_LEN	8
