@@ -317,12 +317,13 @@ void keyboard_handler_main(){
 				if(!shift && ctrl && key_out == 'l') {
 					clear_terminal(&(terminals[current_terminal].screen_x),
 						&(terminals[current_terminal].screen_y),
-						terminals[current_terminal].video_mem);
+						terminals[current_terminal].video_mem + PAGE_SIZE * (current_terminal + 1)
+					);
 					for(i = 0; i < terminals[current_terminal].buf_count; i++){
 						putc_in_terminal(((int8_t *) terminals[current_terminal].line_buf)[i],
 							&(terminals[current_terminal].screen_x),
 							&(terminals[current_terminal].screen_y),
-							terminals[current_terminal].video_mem
+							terminals[current_terminal].video_mem + PAGE_SIZE * (current_terminal + 1)
 						);
 					}
 					move_cursor(current_terminal, terminals[current_terminal].screen_x,
