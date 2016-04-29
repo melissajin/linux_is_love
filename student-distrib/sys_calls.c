@@ -23,7 +23,7 @@
 
 int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
-    uint32_t esp, ebp;
+    uint32_t esp, ebp, i;
 
     cli();
 
@@ -32,6 +32,12 @@ int32_t halt (uint8_t status) {
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
     delete_process(pcb_child_ptr -> pid);
+
+    for(i = 0; i < FILE_ARRAY_LEN; i++) {
+        if(pcb_child_ptr -> files[i].flags & FD_LIVE) {
+            pcb_child_ptr -> files[i].fops -> close(i);
+        }
+    }
 
     if(pcb_parent_ptr != NULL) {
         set_pd(pcb_parent_ptr -> pd);
