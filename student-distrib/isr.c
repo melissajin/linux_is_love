@@ -189,18 +189,18 @@ void fault_handler(struct regs * r){
 		pcb(pcb);
 		terminal = get_terminal(pcb -> term_num);
 
-		set_screen_x(terminal -> screen_x);
-		set_screen_y(terminal -> screen_y);
-		set_video_mem(terminal -> video_mem + PAGE_SIZE * (pcb -> term_num + 1));
+		set_screen_x(terminal -> screen.x);
+		set_screen_y(terminal -> screen.y);
+		set_video_mem(terminal -> screen.video_mem + PAGE_SIZE * (pcb -> term_num + 1));
 
 		printf("Process terminated with exception %d: %s (%d)\n",
 			r -> int_no,
 			exception_messages[r -> int_no],
 			r -> err_code);
 
-		terminal -> screen_x = get_screen_x();
-		terminal -> screen_y = get_screen_y();
-		terminal -> video_mem = get_video_mem() - PAGE_SIZE * (pcb -> term_num + 1);
+		terminal -> screen.x = get_screen_x();
+		terminal -> screen.y = get_screen_y();
+		terminal -> screen.video_mem = get_video_mem() - PAGE_SIZE * (pcb -> term_num + 1);
 
 		halt(1);
 	} else {

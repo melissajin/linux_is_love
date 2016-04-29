@@ -1,14 +1,17 @@
 #include "fs.h"
 #include "process.h"
 
+/* Open, close, read, write system calls for the filesystem */
 static int32_t dir_read (int32_t fd, void* buf, int32_t nbytes);
 static int32_t fs_read (int32_t fd, void* buf, int32_t nbytes);
 static int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes);
 static int32_t fs_open (const uint8_t* filename);
 static int32_t fs_close (int32_t fd);
 
+/* pointer to the bootblock of our filesystem */
 static bootblock_t* bootblock;
 
+/* file operations for a file */
 static fops_t fs_fops = {
 	.read = fs_read,
 	.write = fs_write,
@@ -16,6 +19,7 @@ static fops_t fs_fops = {
 	.close = fs_close
 };
 
+/* file operations for a directory */
 static fops_t dir_fops = {
 	.read = dir_read,
 	.write = fs_write,
@@ -23,7 +27,13 @@ static fops_t dir_fops = {
 	.close = fs_close
 };
 
- /* Initialize filesystem */
+/* fs_init
+ *	  DESCRIPTION: initialize the filesystem
+ *    INPUTS: mem_mod - pointer to a module that specifies the 
+ *			  memory address of the start of the filesystem.
+ *    OUTPUTS: none
+ *    RETURN VALUE: none
+ */
 void fs_init(module_t *mem_mod){
 	bootblock = (bootblock_t*)mem_mod->mod_start;
 
@@ -219,10 +229,24 @@ void fs_init(module_t *mem_mod){
  	return 0;
  }
 
+/* get_inode_ptr
+ *	  DESCRIPTION: get inode pointer given an inode number.
+ *    INPUTS: inode - inode number to get the corresponding inode pointer to.
+ *    OUTPUTS: none
+ *    RETURN VALUE: inode pointer corresponding to the inode number
+ */
  inode_t * get_inode_ptr(uint32_t inode) {
  	return (inode_t*) ((uint8_t*) bootblock + (inode + 1) * BLOCK_SIZE);
  }
 
+/* dir_read
+ *	  DESCRIPTION: reads directory entries in the filesystem.
+ *    INPUTS: fd - file descriptor describing the file to read.
+ *			  buf - buffer to will with the bytes read
+ *			  nbytes - number of bytes to read
+ *    OUTPUTS: fills the 'buf' buffer with the bytes read
+ *    RETURN VALUE: number of bytes read
+ */
 int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
  	int32_t bytes_read;
  	pcb_t * pcb;
@@ -237,6 +261,14 @@ int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
  	return bytes_read;
  }
 
+/* fs_read
+ *	  DESCRIPTION: reads files in the filesystem.
+ *    INPUTS: fd - file descriptor describing the file to read.
+ *			  buf - buffer to will with the bytes read
+ *			  nbytes - number of bytes to read
+ *    OUTPUTS: fills the 'buf' buffer with the bytes read
+ *    RETURN VALUE: number of bytes read
+ */
  int32_t fs_read (int32_t fd, void* buf, int32_t nbytes){
  	int32_t bytes_read;
  	pcb_t * pcb;
@@ -251,14 +283,17 @@ int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
  	return bytes_read;
  }
 
+ /* we use a read only filesystem so fs_write just returns -1 */
  int32_t fs_write (int32_t fd, const void* buf, int32_t nbytes){ 
  	return -1; 
  }
 
+ /* opening a file is handeled by the open system call */
  int32_t fs_open (const uint8_t* filename){ 
  	return 0; 
  }
 
+ /* closing a file is handeled by the close system call */
  int32_t fs_close (int32_t fd){ 
  	return 0; 
  }

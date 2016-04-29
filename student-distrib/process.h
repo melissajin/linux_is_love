@@ -16,6 +16,11 @@
 /* fd flags */
 #define FD_LIVE            0x1
 
+/* fd struct
+ * Used in pcb_t struct. Contains important
+ * information about a open file used in the user
+ * program.
+ */
 typedef struct {
     fops_t * fops;
     inode_t * inode;
@@ -24,10 +29,18 @@ typedef struct {
     uint32_t flags;
 } fd_t;
 
+/* context struct
+ * Used in pcb_t struct. Contains important
+ * register values to remember for context switching.
+ */
 typedef struct {
     uint32_t esp, eip, esp0, ebp;
 } context_t;
 
+/* pcb struct
+ * Contains important values for each process
+ * to help with context switching.
+ */
 typedef struct pcb {
 	fd_t files[FILE_ARRAY_LEN];
     uint8_t args[ARGS_MAX];
@@ -40,17 +53,36 @@ typedef struct pcb {
     int32_t term_num;
 } pcb_t;
 
+/* Registers a device by adding it to the 'devices' array of fops_t*.
+ * Once a device/file is registered, it can be used by a user program. */
 int add_device(uint32_t fytpe, fops_t * fops);
+
+/* Obtains an 'fops' pointer based on the ftype. */
 fops_t * get_device_fops(uint32_t fytpe);
+
+/* adds a process to the 'procs' bitmap array. */
 int32_t add_process();
+
+/* deletes a process if the 'procs' array. */
 int32_t delete_process(int32_t pid);
+
+/* gets a pointer to the page directory corresponding
+ * to the pid of the specified process. */
 uint32_t * get_process_pd(int32_t pid);
+
+/* indicates if theres enough space in memory to add a new process */
 int32_t processes();
+
+/* gets the pid of the active process running on terminal 'term_num' */
 int32_t get_active_process(uint32_t term_num);
+
+/* sets the active_processes array at index'term_num' with the process id.*/
 int32_t set_active_process(uint32_t term_num, int32_t pid);
-void context_switch(pcb_t * prev, pcb_t * next);
+
+/* indicates if theres enough space in memory to add a new process */
 int32_t free_procs();
 
+/* macro to get the  current esp */
 #define get_esp(x)          \
 do {                        \
     asm volatile (          \
@@ -59,6 +91,7 @@ do {                        \
     );                      \
 } while(0)
 
+/* macro to get the current ebp */
 #define get_ebp(x)          \
 do {                        \
     asm volatile (          \
@@ -67,6 +100,9 @@ do {                        \
     );                      \
 } while(0)
 
+/* macro to get the pointer to the pbc that the current
+ * esp is pointing to.
+ */
 #define pcb(x)                          \
 do {                                    \
     uint32_t esp;                       \

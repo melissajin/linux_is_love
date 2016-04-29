@@ -6,6 +6,7 @@
 #define _KEYBOARD_H
 
 #include "../types.h"
+#include "../lib.h"
 
 #define KEYBOARD_PORT     0x64
 #define KEYBOARD_PORT_DATA 0x60
@@ -170,8 +171,7 @@
 #define MAX_TERMINALS		  3
 
 typedef struct {
-	int screen_x, screen_y;
-	char * video_mem;
+	screen_t screen;
 	int8_t line_buf[LINE_BUF_MAX];
 	uint16_t buf_count;
 	int32_t input_len;

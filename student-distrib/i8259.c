@@ -14,7 +14,13 @@
 uint8_t master_mask; /* IRQs 0-7 */
 uint8_t slave_mask; /* IRQs 8-15 */
 
-/* Initialize the 8259 PIC */
+/* i8259_init
+ *	  DESCRIPTION: Initialize the 8259 PIC by sending the 4 ICWs to the
+ *				   correct ports.
+ *    INPUTS: none
+ *    OUTPUTS: none
+ *    RETURN VALUE: none
+ */
 void
 i8259_init(void)
 {
@@ -44,8 +50,12 @@ i8259_init(void)
 	outb(slave_mask, SLAVE_8259_PORT_DATA);
 }
 
-/* Enable (unmask) the specified IRQ */
-/* Source: wiki.osdev.org/8259_PIC#Initialisation */
+/* enable_irq
+ *	  DESCRIPTION: Enable (unmask) the specified IRQ number.
+ *    INPUTS: irq_num - number of the irq to enable
+ *    OUTPUTS: none
+ *    RETURN VALUE: none
+ */
 void
 enable_irq(uint32_t irq_num)
 {
@@ -69,9 +79,12 @@ enable_irq(uint32_t irq_num)
 	
 }
 	
-
-/* Disable (mask) the specified IRQ */
-/* Source: wiki.osdev.org/8259_PIC#Initialisation */
+/* disable_irq
+ *	  DESCRIPTION: Disable (mask) the specified IRQ number.
+ *    INPUTS: irq_num - number of the irq to disable.
+ *    OUTPUTS: none
+ *    RETURN VALUE: none
+ */
 void
 disable_irq(uint32_t irq_num)
 {
@@ -94,8 +107,14 @@ disable_irq(uint32_t irq_num)
 	}
 }
 
-/* Send end-of-interrupt signal for the specified IRQ */
-/* Source: wiki.osdev.org/8259_PIC#Initialisation */
+/* i8259_init
+ *	  DESCRIPTION: Send end-of-interrupt signal for the specified IRQ number.
+ *				   if the IRQ is on the PIC, an eoi is also sent to the 
+ * 				   master at IRQ 2.
+ *    INPUTS: irq_num - number of the irq to send an eoi to.
+ *    OUTPUTS: none
+ *    RETURN VALUE: none
+ */
 void
 send_eoi(uint32_t irq_num)
 {

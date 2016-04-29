@@ -37,18 +37,30 @@ clear(void)
     screen_y = 0;
 }
 
+/*
+* void clear_terminal
+*   Inputs: screen - a pointer to a specific screen
+*   Return Value: none
+*	Function: Clears video memory in the specified screen
+*/
 void
-clear_terminal(int * screen_x, int * screen_y, char * video_mem)
+clear_terminal(screen_t * screen)
 {
     int32_t i;
     for(i=0; i<NUM_ROWS*NUM_COLS; i++) {
-        *(uint8_t *)(video_mem + (i << 1)) = ' ';
-        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+        *(uint8_t *)(screen -> video_mem + (i << 1)) = ' ';
+        *(uint8_t *)(screen -> video_mem + (i << 1) + 1) = ATTRIB;
     }
-    *screen_x = 0;
-    *screen_y = 0;
+    screen -> x = 0;
+    screen -> y = 0;
 }
 
+/*
+* void set_vga_start
+*   Inputs: addr
+*   Return Value: none
+*	Function: Sets the VGA start registers to the corresponding 32-bit address
+*/
 void
 set_vga_start(uint32_t addr) {
 	addr >>= 1;
@@ -60,40 +72,55 @@ set_vga_start(uint32_t addr) {
 	outb((addr >> 8) & 0xFF, VGA_BASE + 1);
 }
 
+/* get generic screen_x */
 int
 get_screen_x() {
 	return screen_x;
 }
 
+/* get generic screen_y */
 int
 get_screen_y() {
 	return screen_y;
 }
 
+/* get generic video_mem */
 char *
 get_video_mem() {
 	return video_mem;
 }
 
+/* set generic screen_x */
 void
 set_screen_x(int x) {
 	screen_x = x;
 }
 
+/* set generic screen_y */
 void
 set_screen_y(int y) {
 	screen_y = y;
 }
 
+/* set generic video_mem */
 void
 set_video_mem(char * mem) {
 	video_mem = mem;
 }
 
+/*
+* void move_cursor
+*   Inputs: term_num - the number identifying the terminal whose cursor is moving
+*           screen - a pointer to a specific screen
+*           term_mem_length - the length of one terminal's video memory
+*   Return Value: void
+*	Function: Moves the cursor in the specific terminal to the specified location
+*/
 void
-move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_length){
+move_cursor(int32_t term_num, screen_t * screen, uint32_t term_mem_length){
 	// Source: http://wiki.osdev.org/Text_Mode_Cursor
-	unsigned short position = (screen_y*NUM_COLS) + screen_x + ((term_num * term_mem_length) >> 1);
+	unsigned short position = (screen -> y * NUM_COLS) + screen -> x +
+			((term_num * term_mem_length) >> 1);
 
     // cursor LOW port to vga INDEX register
 	outb(CURSOR_LOW, VGA_BASE);
@@ -103,6 +130,12 @@ move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_leng
 	outb((position >> 8) & 0xFF, VGA_BASE + 1);
 }
 
+/*
+* void vert_scroll
+*   Inputs: void
+*   Return Value: void
+*	Function: Scrolls each row in video memory up one row
+*/
 void
 vert_scroll(void){
   int32_t i;
@@ -116,32 +149,44 @@ vert_scroll(void){
   }
 }
 
+/*
+* void vert_scroll_in_terminal
+*   Inputs: screen - a pointer to a specific screen
+*   Return Value: void
+*	Function: Scrolls each row in video memory on the screen up one row
+*/
 void
-vert_scroll_in_terminal(char * video_mem){
+vert_scroll_in_terminal(screen_t * screen){
   int32_t i;
   for(i=0; i<(NUM_ROWS - 1)*NUM_COLS; i++) {
-    *(uint8_t *)(video_mem + (i << 1)) = *(uint8_t *)(video_mem + ((i + NUM_COLS) << 1));
-    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    *(uint8_t *)(screen -> video_mem + (i << 1)) = *(uint8_t *)(screen -> video_mem + ((i + NUM_COLS) << 1));
+    *(uint8_t *)(screen -> video_mem + (i << 1) + 1) = ATTRIB;
   }
   for(i=(NUM_ROWS - 1)*NUM_COLS; i<NUM_ROWS*NUM_COLS; i++){
-    *(uint8_t *)(video_mem + (i << 1)) = ' ';
-    *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    *(uint8_t *)(screen -> video_mem + (i << 1)) = ' ';
+    *(uint8_t *)(screen -> video_mem + (i << 1) + 1) = ATTRIB;
   }
 }
 
+/*
+* void backspace_fnc
+*   Inputs: screen - a pointer to a specific screen
+*   Return Value: void
+*	Function: Deletes the most recent character on the screen
+*/
 void
-backspace_fnc(int * screen_x, int * screen_y, char * video_mem){
-  if(*screen_x == 0){
-    *screen_x = NUM_COLS - 1;
-    (*screen_y)--;
-    putc_in_terminal(' ', screen_x, screen_y, video_mem);
-    *screen_x = NUM_COLS - 1;
-    (*screen_y)--;
+backspace_fnc(screen_t * screen){
+  if(screen -> x == 0){
+    screen -> x = NUM_COLS - 1;
+    screen -> y--;
+    putc_in_terminal(' ', screen);
+    screen -> x = NUM_COLS - 1;
+    screen -> y--;
   }
   else{
-    (*screen_x)--;
-    putc_in_terminal(' ', screen_x, screen_y, video_mem);
-    (*screen_x)--;
+    screen -> x--;
+    putc_in_terminal(' ', screen);
+    screen -> x--;
   }
 }
 
@@ -327,29 +372,36 @@ putc(uint8_t c)
     }
 }
 
+/*
+* void putc_in_terminal
+*   Inputs: uint_8* c = character to print
+*           screen - a pointer to a specific screen
+*   Return Value: void
+*	Function: Output a character to the specified screen
+*/
 void
-putc_in_terminal(uint8_t c, int * screen_x, int * screen_y, char * video_mem)
+putc_in_terminal(uint8_t c, screen_t * screen)
 {
     int increment_y = 0;
     if(c == '\n' || c == '\r') {
-        (*screen_y)++;
-        *screen_x=0;
-        if(*screen_y > NUM_ROWS - 1){
-          vert_scroll_in_terminal(video_mem);
-          *screen_y = NUM_ROWS - 1;
+        screen -> y++;
+        screen -> x=0;
+        if(screen -> y > NUM_ROWS - 1){
+          vert_scroll_in_terminal(screen);
+          screen -> y = NUM_ROWS - 1;
         }
     } else {
-        *(uint8_t *)(video_mem + ((NUM_COLS* (*screen_y) + *screen_x) << 1)) = c;
-        *(uint8_t *)(video_mem + ((NUM_COLS* (*screen_y) + *screen_x) << 1) + 1) = ATTRIB;
-        (*screen_x)++;
-        if(*screen_x > NUM_COLS - 1) increment_y = 1;
-        *screen_x %= NUM_COLS;
-        if((*screen_y + increment_y + (*screen_x / NUM_COLS)) > NUM_ROWS - 1){
-          vert_scroll_in_terminal(video_mem);
-          *screen_y = NUM_ROWS - 1;
+        *(uint8_t *)(screen -> video_mem + ((NUM_COLS* (screen -> y) + screen -> x) << 1)) = c;
+        *(uint8_t *)(screen -> video_mem + ((NUM_COLS* (screen -> y) + screen -> x) << 1) + 1) = ATTRIB;
+        screen -> x++;
+        if(screen -> x > NUM_COLS - 1) increment_y = 1;
+        screen -> x %= NUM_COLS;
+        if((screen -> y + increment_y + (screen -> x / NUM_COLS)) > NUM_ROWS - 1){
+          vert_scroll_in_terminal(screen);
+          screen -> y = NUM_ROWS - 1;
         }
         else{
-          *screen_y = (*screen_y + increment_y + (*screen_x / NUM_COLS)) % NUM_ROWS;
+          screen -> y = (screen -> y + increment_y + (screen -> x / NUM_COLS)) % NUM_ROWS;
         }
     }
 }

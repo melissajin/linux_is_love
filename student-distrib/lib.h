@@ -9,19 +9,25 @@
 
 #define VIDEO 0xB8000
 
+typedef struct {
+	int x;
+	int y;
+	char * video_mem;
+} screen_t;
+
 int32_t printf(int8_t *format, ...);
 void putc(uint8_t c);
-void putc_in_terminal(uint8_t c, int * screen_x, int * screen_y, char * video_mem);
+void putc_in_terminal(uint8_t c, screen_t * screen);
 int32_t puts(int8_t *s);
 int8_t *itoa(uint32_t value, int8_t* buf, int32_t radix);
 int8_t *strrev(int8_t* s);
 uint32_t strlen(const int8_t* s);
 void clear(void);
-void clear_terminal(int * screen_x, int * screen_y, char * video_mem);
-void move_cursor(int32_t term_num, int screen_x, int screen_y, uint32_t term_mem_length);
+void clear_terminal(screen_t * screen);
+void move_cursor(int32_t term_num, screen_t * screen, uint32_t term_mem_length);
 void vert_scroll(void);
-void vert_scroll_in_terminal(char * video_mem);
-void backspace_fnc(int * screen_x, int * screen_y, char * video_mem);
+void vert_scroll_in_terminal(screen_t * screen);
+void backspace_fnc(screen_t * screen);
 void test_interrupts(void);
 void* memset(void* s, int32_t c, uint32_t n);
 void* memset_word(void* s, int32_t c, uint32_t n);

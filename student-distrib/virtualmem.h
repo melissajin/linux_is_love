@@ -17,6 +17,7 @@
 #define FLAG_PS 0x80   /* page size (4 MB) */
 #define FLAG_G  0x100  /* global */
 
+/* flush the tlb without changing it */
 #define flush_tlb()						\
 {										\
 	asm volatile("					\n\
@@ -33,12 +34,15 @@
 void virtualmem_init();
 
 /* generalized paging functions */
+/* initialize a page directory to default values */
 void pd_init(uint32_t * pd, int32_t term_num);
+/* set a page directory entry */
 void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags);
+/* turn on flags of a page directory entry */
 void set_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
+/* turn off flags of a page directory entry */
 void unset_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags);
+/* set the PDPR to a page directory */
 void set_pd(uint32_t * pd);
-
-void set_vidmem_tables(uint32_t * pd, uint32_t num);
 
 #endif
