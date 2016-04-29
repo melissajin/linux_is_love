@@ -46,7 +46,6 @@ uint32_t * get_process_pd(int32_t pid);
 int32_t processes();
 int32_t get_active_process(uint32_t term_num);
 int32_t set_active_process(uint32_t term_num, int32_t pid);
-void context_switch(pcb_t * prev, pcb_t * next);
 int32_t free_procs();
 
 #define get_esp(x)          \

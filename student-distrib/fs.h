@@ -11,11 +11,10 @@
 
 #define BLOCK_SIZE 4096 /* kilobytes */
 #define NUM_INODES 63
-#define NUM_DATA_BLOCKS (12*NUM_INODES) /* max num data blocks per inode * number of inodes */
-#define CHARS_PER_BLOCK (4096) /* 4kB block */
+#define CHARS_PER_BLOCK 4096 /* 4kB block */
+#define BLOCKS_PER_INODE 1023
 #define FNAME_LEN 32
 #define BYTES_DENTRY 64
-#define MAX_DIR_ENTRY_CHARS (16*33)
 #define RTC_FTYPE	0
 #define DIR_FTYPE	1
 #define FILE_FTYPE	2
@@ -38,7 +37,7 @@ typedef struct bootblock {
 
 typedef struct inode {
 	int32_t length;
-	int32_t data_block[12]; /* number based on lecture slides */
+	int32_t data_block[BLOCKS_PER_INODE]; /* number based on lecture slides */
 } inode_t;
 
 typedef struct data_block {

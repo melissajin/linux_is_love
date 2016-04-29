@@ -22,14 +22,12 @@
 
 extern void pit_isr();
 
-extern uint32_t temp_esp;
-
 static void pit_reset_count();
 
 uint16_t pit_rate = 0;
 uint8_t * next_execute = NULL;
 
-//initializes the pit
+/* initializes the pit */
 void pit_init(){
 	set_int_gate(0x20, (unsigned long) pit_isr);
 	
@@ -42,7 +40,7 @@ void pit_init(){
 	enable_irq(PIT_IRQ_NUM);
 }
 
-//pit interrupt handler
+/* pit interrupt handler */
 void pit_handler_main(){
 	int32_t prev_pid, next_pid, running_term, i;
 	pcb_t * prev, * next;
@@ -56,13 +54,7 @@ void pit_handler_main(){
 	}
 
 	pcb(prev);
-	// prev = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (get_curr_active_process() + 1));
 
-	/* save prev esp in correct varable */
-	// if(temp_esp != 0){
-	// 	prev -> context.esp = temp_esp;
-	// 	temp_esp = 0;
-	// }
 	asm volatile("							\n\
 		movl	%%esp, %[prev_esp]			\n\
 		movl	%%ebp, %[prev_ebp]			\n\
@@ -90,14 +82,12 @@ void pit_handler_main(){
   		if(next_pid != -1) break;
   	}
 
-  	next = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (next_pid + 1));
+  	next = (pcb_t *) (KERNEL_MEM_END - KERNEL_STACK_SIZE * (next_pid + 1));
 
 	pit_reset_count();
 
-	// if(prev_pid == get_curr_active_process() && next -> parent_pcb == NULL) return;
   	if(prev_pid == next_pid) return;
 
-	// context_switch(prev, next);
 	set_pd(next -> pd);
 
 	asm volatile("							\n\
@@ -112,13 +102,13 @@ void pit_handler_main(){
 	);
 }
 
-//sets the counter to rate(hz), change will happen after the most recent tick is done
+/* sets the counter to rate(hz), change will happen after the most recent tick is done */
 void pit_set_rate(uint16_t rate){
 	
 	pit_rate =  INPUT_CLK/rate;
 }
 
-//gets the current count
+/* gets the current count */
 uint16_t pit_get_count(){
 	uint16_t retval;
 	uint16_t temp;

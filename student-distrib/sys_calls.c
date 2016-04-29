@@ -21,6 +21,9 @@
 #define STR2(x)         #x
 #define STR(x)          STR2(x)
 
+/* helper function to parse args for execute */
+static void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t * arg_buf);
+
 int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp, i;
@@ -28,11 +31,11 @@ int32_t halt (uint8_t status) {
     cli();
 
     pcb(pcb_child_ptr);
-    // pcb_child_ptr = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (get_curr_active_process() + 1));
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
     delete_process(pcb_child_ptr -> pid);
 
+    /* close any open files */
     for(i = 0; i < FILE_ARRAY_LEN; i++) {
         if(pcb_child_ptr -> files[i].flags & FD_LIVE) {
             pcb_child_ptr -> files[i].fops -> close(i);
@@ -45,7 +48,6 @@ int32_t halt (uint8_t status) {
         set_active_process(pcb_parent_ptr -> term_num, pcb_parent_ptr -> pid);
     } else {
         set_pd(NULL);
-        // tss.esp0 = KERNEL_MEM_END - WORD_SIZE;
         set_active_process(pcb_child_ptr -> term_num, -1);
         while(1) {
             execute((uint8_t *) "shell");
@@ -76,7 +78,6 @@ int32_t execute (const uint8_t* command) {
     dentry_t dentry;
     uint32_t addr;
     uint32_t vm_end;
-    uint32_t parent_pid;
     pcb_t* pcb;
     fd_t stdin;
     fd_t stdout;
@@ -105,15 +106,13 @@ int32_t execute (const uint8_t* command) {
         vm_end = PROG_VM_START + SPACE_4MB - WORD_SIZE;
 
         /* starting address of current pcb */
-        // pcb(pcb_start);
-        parent_pid = get_curr_active_process();
-        pcb_start = (pcb_t *) (KERNEL_MEM_END - PCB_SIZE * (parent_pid + 1));
+        pcb(pcb_start);
 
         /* get terminal fops */
         term_fops = get_device_fops(TERM_FTYPE);
 
         /* setting the pcb in the kernel stack */
-        pcb = (pcb_t*) (KERNEL_MEM_END - (pid + 1) * PCB_SIZE);
+        pcb = (pcb_t*) (KERNEL_MEM_END - (pid + 1) * KERNEL_STACK_SIZE);
         stdin.fops = term_fops;
         stdin.inode = NULL;
         stdin.pos = 0;
@@ -155,7 +154,7 @@ int32_t execute (const uint8_t* command) {
         strcpy((int8_t *) pcb -> args, (int8_t *) args);
 
         pcb -> pd = pd;
-        pcb -> context.esp0 = KERNEL_MEM_END - PCB_SIZE * pid - WORD_SIZE;
+        pcb -> context.esp0 = KERNEL_MEM_END - KERNEL_STACK_SIZE * pid - WORD_SIZE;
 
         set_active_process(pcb -> term_num, pid);
 

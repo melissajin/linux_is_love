@@ -104,31 +104,3 @@ int32_t set_active_process(uint32_t term_num, int32_t pid){
 	active_processes[term_num] = pid;
 	return 0;
 }
-
-void context_switch(pcb_t * prev, pcb_t * next) {
-	set_pd(next -> pd);
-
-	asm volatile("							\n\
-		# movl	%%ebp, %[prev_ebp]			\n\
-		# movl	%%esp, %[prev_esp]			\n\
-		movl	%[next_esp], %%esp			\n\
-		# movl	%[next_ebp], %%ebp 			\n\
-		# movl	$1f, %[prev_eip]			\n\
-		movl	%[next_esp0], %[tss_esp0]	\n\
-		# pushl	%[next_eip]					\n\
-		# ret									\n\
-		 									\n\
-		1:									\n\
-		# popa								\n\
-		# iret								\n\
-		"
-		: [prev_esp] "=m" (prev -> context.esp),
-		  [prev_eip] "=m" (prev -> context.eip),
-		  [prev_ebp] "=m" (prev -> context.ebp),
-		  [tss_esp0] "=m" (tss.esp0)
-		: [next_esp] "rm" (next -> context.esp),
-		  [next_eip] "rm" (next -> context.eip),
-		  [next_ebp] "rm" (next -> context.ebp),
-		  [next_esp0] "r" (next -> context.esp0)
-	);
-}
