@@ -160,6 +160,8 @@ int32_t rtc_close(int32_t fd) {
     int i;
     pcb_t * pcb;
 
+    pcb(pcb);
+
     procs[pcb -> pid - 1].rate = RATE_MIN;
 
     open--;
