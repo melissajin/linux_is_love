@@ -241,7 +241,7 @@ void update(uint16_t key){
 			&(curr_term -> screen_y),
 			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
+		move_cursor(current_terminal, curr_term -> screen_x,
 			curr_term -> screen_y, PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count++] = '\n';
 		curr_term -> hit_enter = 1;
@@ -257,7 +257,7 @@ void update(uint16_t key){
 				&(curr_term -> screen_y),
 				curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 			);
-			move_cursor(current_terminal, curr_term -> screen_x, 
+			move_cursor(current_terminal, curr_term -> screen_x,
 				curr_term -> screen_y, PAGE_SIZE);
 			curr_term -> buf_count--;
 			curr_term -> input_len--;
@@ -270,7 +270,7 @@ void update(uint16_t key){
 			&(curr_term -> screen_y),
 			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
+		move_cursor(current_terminal, curr_term -> screen_x,
 			curr_term -> screen_y, PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count] = key;
 		curr_term -> buf_count++;
@@ -400,6 +400,8 @@ void keyboard_handler_main(){
 								break;
 						}
 					}
+					/* if the key is not supposed to print to screen then ignore it */
+					if((key_out >= ' ' && key_out <= 'z') || (key_out == KEY_BACKSPACE))
 					update(key_out);
 			  }
 			}
@@ -416,12 +418,12 @@ int32_t start_terminal(uint32_t term_num){
 
 	curr_active_process = get_active_process(current_terminal);
 	next_active_process = get_active_process(term_num);
-	
+
 	if(!free_procs() && next_active_process == -1) return -1;
 
 	set_vga_start(term_num * PAGE_SIZE);
 
-	move_cursor(term_num, terminals[term_num].screen_x, 
+	move_cursor(term_num, terminals[term_num].screen_x,
 		terminals[term_num].screen_y, PAGE_SIZE);
 
 	/* switch processes */
