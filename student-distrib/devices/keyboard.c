@@ -129,15 +129,39 @@ fops_t term_fops = {
 	.close = terminal_close
 };
 
-
+/* terminal_open
+ * DESC: Function that always returns 0 when someone tries to open terminal
+ * 			 because the terminal is always open
+ * INPUT: None - none of the parameters are used
+ * OUTPUT: None
+ * RETURN: 0
+ * SIDE EFFECTS: None
+ */
 int32_t terminal_open(const uint8_t* filename){
   return 0;
 }
 
+/* terminal_close
+ * DESC: Function that always returns 0 when someone tries to close the terminal
+ * 			 because the terminal is always open
+ * INPUT: None - none of the parameters are used
+ * OUTPUT: None
+ * RETURN: 0
+ * SIDE EFFECTS: None
+ */
 int32_t terminal_close(int32_t fd){
   return 0;
 }
 
+/* terminal_read
+ * DESC: returns data from one line that has been terminated by pressing
+ * Enter, or as much as fits in the buffer from one such line
+ * INPUT: The current terminal buffer from the curent pcb, number of bytes to read
+ * OUTPUT: Moves nbytes number of bytes from terminal buffer to the passed in buffer
+ * RETURN: Number of bytes read from the terminal buffer
+ * SIDE EFFECTS: Moves the unread bytes to the beginning of the buffer and
+ * clears the rest of the buffer
+ */
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	int diff, chars_read;
 	pcb_t * pcb;
@@ -181,6 +205,14 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 	return chars_read;
 }
 
+/* terminal_write
+ * DESC: Prints nbytes number of characters onto to the terminal
+ * INPUT: nbytes to determine the number of bytes, buffer that contains the characters
+ * to print
+ * OUTPUT: Prints nbytes number of characters to the terminal
+ * RETURN: Number of bytes printed
+ * SIDE EFFECTS: Could move the terminal up
+ */
 int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	int i;
 	pcb_t * pcb;
@@ -208,6 +240,15 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	return nbytes;
 }
 
+/* kybd_init
+ * DESC: Initializes the keyboard interrupt handler which takes inputs from
+ * the keyboard and starts all of the terminals
+ * INPUT: The keyboard handler
+ * OUTPUT: Sets the IDT entry for keyboard
+ * RETURN: None
+ * SIDE EFFECTS: Initializes all of the terminals to position (0,0) and
+ * all of the buffers are full of null characters
+ */
 void kybd_init(){
 	int i;
 
@@ -230,45 +271,60 @@ void kybd_init(){
 	add_device(TERM_FTYPE, &term_fops);
 }
 
+/* update
+ * DESC: Determines what to do with the terminal buffer and what is printed on the
+ * terminal based on the key pressed
+ * INPUT: The ascii value of the key that is pressed from the keyboard
+ * OUTPUT: None
+ * RETURN: None
+ * SIDE EFFECTS: Changes terminal buffer and what is printed to the terminal
+ */
 void update(uint16_t key){
 	terminal_t * curr_term = &(terminals[current_terminal]);
 
 	if(key == KEY_RETURN){
+		/* put '/r' as the last character in the buffer */
 		putc_in_terminal(key,
 			&(curr_term -> screen_x),
 			&(curr_term -> screen_y),
 			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
+		/* Moves the cursor to the next line start at x position 0 */
+		move_cursor(current_terminal, curr_term -> screen_x,
 			curr_term -> screen_y, PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count++] = '\n';
 		curr_term -> hit_enter = 1;
 		curr_term -> input_len = 0;
+		/* If the terminal is not being read from then just clear the terminal buffer */
 		if(!curr_term -> reading) {
 			memset(curr_term -> line_buf, NULL_CHAR, LINE_BUF_MAX);
 			curr_term -> buf_count = 0;
 		}
 	}
+	/* If backspace is pressed then delete the character from the screen and
+		 delete the character from the terminal buffer */
 	else if(key == KEY_BACKSPACE){
 		if(curr_term -> input_len){
 			backspace_fnc(&(curr_term -> screen_x),
 				&(curr_term -> screen_y),
 				curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 			);
-			move_cursor(current_terminal, curr_term -> screen_x, 
+			move_cursor(current_terminal, curr_term -> screen_x,
 				curr_term -> screen_y, PAGE_SIZE);
 			curr_term -> buf_count--;
 			curr_term -> input_len--;
 			curr_term -> line_buf[curr_term -> buf_count] = NULL_CHAR;
 		}
 	}
+	/* If the terminal buffer is already full then do not print anything and
+		 stop filling the buffer */
 	else if(curr_term -> buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
 		putc_in_terminal(key,
 			&(curr_term -> screen_x),
 			&(curr_term -> screen_y),
 			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
 		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
+		move_cursor(current_terminal, curr_term -> screen_x,
 			curr_term -> screen_y, PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count] = key;
 		curr_term -> buf_count++;
@@ -276,6 +332,15 @@ void update(uint16_t key){
 	}
 }
 
+/* keyboard_handler_main
+ * DESC: Keyboard interrupt function that gets the key pressed from the keyboard
+ * and determines what to do with it
+ * INPUT: The keyboard data from the keyboard ports
+ * OUTPUT: None
+ * RETURN: None
+ * SIDE EFFECTS: Changes what is printed to the terminal as well as switches
+ * between terminals
+ */
 void keyboard_handler_main(){
 
 	unsigned char scancode;
@@ -327,12 +392,14 @@ void keyboard_handler_main(){
 					move_cursor(current_terminal, terminals[current_terminal].screen_x,
 						terminals[current_terminal].screen_y, PAGE_SIZE);
 				}
+				/* Stops the current process */
 				else if(!shift && ctrl && key_out == 'c') {
 					if(processes()){
 						send_eoi(KEYBOARD_IRQ_NUM);
 						halt(1);
 					}
 				}
+				/* Switches between terminals */
 				else if(alt && key_out == KEY_F1) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(0);
@@ -399,6 +466,8 @@ void keyboard_handler_main(){
 								break;
 						}
 					}
+					/* if the key is not supposed to print to screen then ignore it */
+					if((key_out >= ' ' && key_out <= 'z') || (key_out == KEY_BACKSPACE))
 					update(key_out);
 			  }
 			}
@@ -407,6 +476,15 @@ void keyboard_handler_main(){
 	send_eoi(KEYBOARD_IRQ_NUM);
 }
 
+/* start_terminal
+ * DESC: Sets the vga to the terminals video memory location and restores the
+ * state the terminal was in before it was left
+ * INPUT: The number of the terminal the user is switching to
+ * OUTPUT: Restores the previous state of the terminal to the screen
+ * RETURN: If not switiching to a valid terminal or switching to the same terminal
+ * then return -1 otherwise return 0
+ * SIDE EFFECTS: None
+ */
 int32_t start_terminal(uint32_t term_num){
 	int32_t curr_active_process, next_active_process;
 
@@ -415,12 +493,12 @@ int32_t start_terminal(uint32_t term_num){
 
 	curr_active_process = get_active_process(current_terminal);
 	next_active_process = get_active_process(term_num);
-	
+
 	if(!free_procs() && next_active_process == -1) return -1;
 
 	set_vga_start(term_num * PAGE_SIZE);
 
-	move_cursor(term_num, terminals[term_num].screen_x, 
+	move_cursor(term_num, terminals[term_num].screen_x,
 		terminals[term_num].screen_y, PAGE_SIZE);
 
 	/* switch processes */
@@ -441,22 +519,57 @@ int32_t start_terminal(uint32_t term_num){
 	return 0;
 }
 
+/* set_curr_active_process
+ * DESC: Set the active process of the current terminal
+ * INPUT: The identification number of the active process
+ * OUTPUT: None
+ * RETURN: None
+ * SIDE EFFECTS: None
+ */
 void set_curr_active_process(int32_t pid) {
 	set_active_process(current_terminal, pid);
 }
 
+/* get_active_process
+ * DESC: Get the active process of the current terminal
+ * INPUT: None
+ * OUTPUT: None
+ * RETURN: The identification number of the active process
+ * SIDE EFFECTS: None
+ */
 int32_t get_curr_active_process() {
 	return get_active_process(current_terminal);
 }
 
+/* curr_terminal_running_process
+ * DESC: Determines if the terminal you are on is running a process
+ * INPUT: The current terminal the user is on
+ * OUTPUT: None
+ * RETURN: identification of the active process if there is one
+ * SIDE EFFECTS: None
+ */
 int32_t curr_terminal_running_process(){
 	return get_active_process(current_terminal) != -1;
 }
 
+/* get_current_terminal
+ * DESC: Return the terminal number the user is on
+ * INPUT: None
+ * OUTPUT: None
+ * RETURN: current terminal number
+ * SIDE EFFECTS: None
+ */
 uint32_t get_current_terminal() {
 	return current_terminal;
 }
 
+/* get_terminal
+ * DESC: Get access to a terminals structure
+ * INPUT: The terminal number you are accessing
+ * OUTPUT: None
+ * RETURN: The address terminal structure
+ * SIDE EFFECTS: None
+ */
 terminal_t * get_terminal(int32_t term_num) {
 	return &(terminals[term_num]);
 }
