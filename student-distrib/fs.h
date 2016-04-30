@@ -63,6 +63,7 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry);
 /*Lists the directory entries*/
 uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length);
 
+/* Reads one directory entry from the directory */
 uint32_t read_directory_entry(uint32_t dir_entry, uint8_t* buf, uint32_t length);
 
 /* Reads data in dentry starting from offset */
