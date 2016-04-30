@@ -4,7 +4,7 @@
 
 #include "rtc.h"
 #include "../i8259.h"
-#include "../idt_set.h"
+#include "../isr.h"
 #include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
@@ -24,8 +24,6 @@
 #define RATE_MAX     1024
 #define RTC_ABS_MAX  32768
 
-extern void rtc_isr();
-
 static int32_t rtc_open(const uint8_t * filename);
 static int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes);
 static int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes);
@@ -43,7 +41,7 @@ static fops_t rtc_fops = {
 
 void rtc_init() {
     /* Populate IDT entry for rtc */
-    set_int_gate(0x28, (unsigned long) rtc_isr);
+    add_irq(RTC_IRQ_NUM, (uint32_t) rtc_handler_main);
 
     add_device(RTC_FTYPE, &rtc_fops);
 }

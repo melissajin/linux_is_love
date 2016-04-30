@@ -6,6 +6,8 @@
 #include "devices/keyboard.h"
 #include "virtualmem.h"
 
+#define NUM_IRQS 16
+
 struct regs
 {
     unsigned int gs, fs, es, ds;      /* pushed the segs last */
@@ -83,7 +85,27 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void irq0();
+extern void irq1();
+extern void irq2();
+extern void irq3();
+extern void irq4();
+extern void irq5();
+extern void irq6();
+extern void irq7();
+extern void irq8();
+extern void irq9();
+extern void irq10();
+extern void irq11();
+extern void irq12();
+extern void irq13();
+extern void irq14();
+extern void irq15();
 extern void sys_call();
+
+static void irq_handler_default();
+
+uint32_t irq_table[NUM_IRQS];
 
 /* isrs_install
  * DESC: C-function that initializes the first 32 gates int the IDT for the exceptions
@@ -93,6 +115,8 @@ extern void sys_call();
  * SIDE EFFECTS: Sets the first 32 spots on the idt table
  */
 void isrs_install(){
+	int i;
+
 	set_trap_gate(0,  (unsigned long) isr0);
 	set_trap_gate(1,  (unsigned long) isr1);
 	set_int_gate(2,  (unsigned long) isr2);
@@ -126,6 +150,28 @@ void isrs_install(){
 	set_trap_gate(30,  (unsigned long) isr30);
 	set_trap_gate(31,  (unsigned long) isr31);
 	set_sys_gate(0x80, (unsigned long) sys_call);
+
+	/* start irqs at idt entry 32 */
+	set_int_gate(32,  (unsigned long) irq0);
+	set_int_gate(33,  (unsigned long) irq1);
+	set_int_gate(34,  (unsigned long) irq2);
+	set_int_gate(35,  (unsigned long) irq3);
+	set_int_gate(36,  (unsigned long) irq4);
+	set_int_gate(37,  (unsigned long) irq5);
+	set_int_gate(38,  (unsigned long) irq6);
+	set_int_gate(39,  (unsigned long) irq7);
+	set_int_gate(40,  (unsigned long) irq8);
+	set_int_gate(41,  (unsigned long) irq9);
+	set_int_gate(42,  (unsigned long) irq10);
+	set_int_gate(43,  (unsigned long) irq11);
+	set_int_gate(44,  (unsigned long) irq12);
+	set_int_gate(45,  (unsigned long) irq13);
+	set_int_gate(46,  (unsigned long) irq14);
+	set_int_gate(47,  (unsigned long) irq15);
+
+	for(i = 0; i < NUM_IRQS; i++) {
+		irq_table[i] = (uint32_t) irq_handler_default;
+	}
 }
 /*fault_handler
  *DESC: C-function that handles any exceptions, called by an assembly linkage
@@ -178,4 +224,11 @@ void fault_handler(struct regs * r){
 void sys_call_handler(int syscall){
 	printf("SYSTEM CALL %d\n", syscall);
 	while(1);
+}
+
+void irq_handler_default() {}
+
+void add_irq(uint32_t irq, uint32_t handler_addr) {
+	if(irq < 0 || irq >= NUM_IRQS) return;
+	irq_table[irq] = handler_addr;
 }

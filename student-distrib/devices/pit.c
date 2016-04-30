@@ -1,6 +1,6 @@
 #include "pit.h"
 #include "../i8259.h"
-#include "../idt_set.h"
+#include "../isr.h"
 #include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
@@ -20,8 +20,6 @@
 #define LOWER_B 0xFF
 #define UPPER_B 8
 
-extern void pit_isr();
-
 extern uint32_t temp_esp;
 
 static void pit_reset_count();
@@ -31,7 +29,7 @@ uint8_t * next_execute = NULL;
 
 //initializes the pit
 void pit_init(){
-	set_int_gate(0x20, (unsigned long) pit_isr);
+	add_irq(PIT_IRQ_NUM, (uint32_t) pit_handler_main);
 	
 	pit_rate = INPUT_CLK / DEFAULT_RATE;
 

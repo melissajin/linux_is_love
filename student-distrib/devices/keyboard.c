@@ -5,15 +5,13 @@
 #include "keyboard.h"
 #include "pit.h"
 #include "../i8259.h"
-#include "../idt_set.h"
+#include "../isr.h"
 #include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
 #include "../sys_calls.h"
 #include "../virtualmem.h"
 #include "../x86_desc.h"
-
-extern void kybd_isr();
 
 static int32_t terminal_open(const uint8_t* filename);
 static int32_t terminal_close(int32_t fd);
@@ -214,7 +212,7 @@ void kybd_init(){
 	int i;
 
 	/* Populate IDT entry for keyboard */
-	set_int_gate(0x21, (unsigned long) kybd_isr); //0x21 is the interrupt number in the IDT
+	add_irq(KEYBOARD_IRQ_NUM, (uint32_t) keyboard_handler_main);
 
 	/* Unmask keybord interrupt on PIC */
 	enable_irq(KEYBOARD_IRQ_NUM);

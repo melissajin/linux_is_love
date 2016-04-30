@@ -160,7 +160,9 @@ entry (unsigned long magic, unsigned long addr)
 	 * PIC, any other initialization stuff... */
 	fs_init((module_t *)mbi->mods_addr);
 	virtualmem_init();
-	
+
+	/* Initialize IDT - must occur before other devices are initialized */
+	isrs_install();
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
 	kybd_init();
@@ -172,7 +174,6 @@ entry (unsigned long magic, unsigned long addr)
 	pit_init();
 
 	/* load IDT */
-	isrs_install();
 	lidt(idt_desc_ptr);
 
 	/* Enable interrupts */
