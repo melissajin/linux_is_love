@@ -14,6 +14,11 @@
 /* fd flags */
 #define FD_LIVE            0x1
 
+/* fd struct
+ * Used in pcb_t struct. Contains important
+ * information about a open file used in the user
+ * program.
+ */
 typedef struct {
     fops_t * fops;
     inode_t * inode;
@@ -22,10 +27,18 @@ typedef struct {
     uint32_t flags;
 } fd_t;
 
+/* context struct
+ * Used in pcb_t struct. Contains important
+ * register values to remember for context switching.
+ */
 typedef struct {
     uint32_t esp, eip, esp0, ebp;
 } context_t;
 
+/* pcb struct
+ * Contains important values for each process
+ * to help with context switching.
+ */
 typedef struct pcb {
 	fd_t files[FILE_ARRAY_LEN];
     uint8_t args[ARGS_MAX];
@@ -48,6 +61,7 @@ int32_t get_active_process(uint32_t term_num);
 int32_t set_active_process(uint32_t term_num, int32_t pid);
 int32_t free_procs();
 
+/* macro to get the  current esp */
 #define get_esp(x)          \
 do {                        \
     asm volatile (          \
@@ -56,6 +70,7 @@ do {                        \
     );                      \
 } while(0)
 
+/* macro to get the current ebp */
 #define get_ebp(x)          \
 do {                        \
     asm volatile (          \
@@ -64,6 +79,9 @@ do {                        \
     );                      \
 } while(0)
 
+/* macro to get the pointer to the pbc that the current
+ * esp is pointing to.
+ */
 #define pcb(x)                          \
 do {                                    \
     uint32_t esp;                       \
