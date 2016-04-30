@@ -41,6 +41,13 @@ static fops_t rtc_fops = {
     .close = rtc_close
 };
 
+/*
+ * void rtc_init
+ *   Description: Initializes the structures for RTC interrupts
+ *   Inputs: none
+ *   Outputs: none
+ *   Return Value: none
+ */
 void rtc_init() {
     /* Populate IDT entry for rtc */
     set_int_gate(0x28, (unsigned long) rtc_isr);
@@ -48,6 +55,14 @@ void rtc_init() {
     add_device(RTC_FTYPE, &rtc_fops);
 }
 
+/*
+ * void rtc_handler_main
+ *   Description: Acknowledges the interrupt on the PIC and RTC and sets all
+ *           processes to having had an interrupt occur.
+ *   Inputs: none
+ *   Outputs: none
+ *   Return Value: none
+ */
 void rtc_handler_main() {
     int i;
 
@@ -60,7 +75,14 @@ void rtc_handler_main() {
     for(i = 0; i < MAX_TERMINALS; i++) reading[i] = 0;
 }
 
-/* open rtc */
+/*
+ * int32_t rtc_open
+ *   Description: Opens the RTC for a process and defaults the rate to 2 Hz.
+ *   Inputs: filename - unused
+ *   Outputs: none
+ *   Return Value: 0 on success
+ *   Side Effects: Enables RTC interrupts when the first process opens it.
+ */
 int32_t rtc_open(const uint8_t * filename) {
     char curr;
 
@@ -89,7 +111,15 @@ int32_t rtc_open(const uint8_t * filename) {
     return 0;
 }
 
-/* wait until next rtc interrupt */
+/*
+ * int32_t rtc_read
+ *   Description: Waits for an interrupt to happen, then returns.
+ *   Inputs: fd - unused
+ *           buf - unused
+ *           nbytes - unused
+ *   Outputs: none
+ *   Return Value: 0 when the next interrupt has occurred.
+ */
 int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes) {
     pcb_t * pcb;
     int32_t term_num;
@@ -103,7 +133,15 @@ int32_t rtc_read(int32_t fd, void * buf, int32_t nbytes) {
     return 0;
 }
 
-/* change rtc frequency */
+/*
+ * int32_t rtc_write
+ *   Description: Changes the interrupt frequency of the RTC.
+ *   Inputs: fd - unused
+ *           buf - a pointer to an interger holding the desired rate
+ *           nbytes - unused
+ *   Outputs: none
+ *   Return Value: 0 on success, -1 on failure
+ */
 int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes) {
     int32_t rate, ratefactor;
     char curr, rs = 0;  /* rate select */
@@ -139,7 +177,14 @@ int32_t rtc_write(int32_t fd, const void * buf, int32_t nbytes) {
     return 1;
 }
 
-/* close rtc */
+/*
+ * int32_t rtc_close
+ *   Description: Closes the RTC for a certain process.
+ *   Inputs: fd - unused
+ *   Outputs: none
+ *   Return Value: 0 on finish
+ *   Side Effects: Turns off RTC interrupts when the last process closes it.
+ */
 int32_t rtc_close(int32_t fd) {
     char curr;
 

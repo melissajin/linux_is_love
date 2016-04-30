@@ -6,7 +6,6 @@
 #include "pit.h"
 #include "../i8259.h"
 #include "../idt_set.h"
-#include "../lib.h"
 #include "../fs.h"
 #include "../process.h"
 #include "../sys_calls.h"
@@ -196,15 +195,10 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes){
 	term_num = pcb -> term_num;
 
 	for(i = 0; i < nbytes; i++){
-		putc_in_terminal(((int8_t *) buf)[i],
-			&(terminals[term_num].screen_x),
-			&(terminals[term_num].screen_y),
-			terminals[term_num].video_mem
-		);
+		putc_in_terminal(((int8_t *) buf)[i], &(terminals[term_num].screen));
 	}
 	if(pcb -> term_num == current_terminal) {
-		move_cursor(term_num, terminals[term_num].screen_x,
-			terminals[term_num].screen_y, PAGE_SIZE);
+		move_cursor(term_num, &(terminals[term_num].screen), PAGE_SIZE);
 	}
 
 	return nbytes;
@@ -223,10 +217,10 @@ void kybd_init(){
 	for(i = 0; i < MAX_TERMINALS; i++) {
 		memset(terminals[i].line_buf, NULL_CHAR, LINE_BUF_MAX);
 		terminals[i].buf_count = 0;
-		terminals[i].screen_x = 0;
-		terminals[i].screen_y = 0;
 		terminals[i].reading = 0;
-		terminals[i].video_mem = get_video_mem();
+		terminals[i].screen.x = 0;
+		terminals[i].screen.y = 0;
+		terminals[i].screen.video_mem = get_video_mem();
 	}
 
 	add_device(TERM_FTYPE, &term_fops);
@@ -236,13 +230,10 @@ void update(uint16_t key){
 	terminal_t * curr_term = &(terminals[current_terminal]);
 
 	if(key == KEY_RETURN){
-		putc_in_terminal(key,
-			&(curr_term -> screen_x),
-			&(curr_term -> screen_y),
-			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
-		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
-			curr_term -> screen_y, PAGE_SIZE);
+		curr_term -> screen.video_mem += PAGE_SIZE * (current_terminal + 1);
+		putc_in_terminal(key, &(curr_term -> screen));
+		curr_term -> screen.video_mem -= PAGE_SIZE * (current_terminal + 1);
+		move_cursor(current_terminal, &(curr_term -> screen), PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count++] = '\n';
 		curr_term -> hit_enter = 1;
 		curr_term -> input_len = 0;
@@ -253,25 +244,20 @@ void update(uint16_t key){
 	}
 	else if(key == KEY_BACKSPACE){
 		if(curr_term -> input_len){
-			backspace_fnc(&(curr_term -> screen_x),
-				&(curr_term -> screen_y),
-				curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
-			);
-			move_cursor(current_terminal, curr_term -> screen_x, 
-				curr_term -> screen_y, PAGE_SIZE);
+			curr_term -> screen.video_mem += PAGE_SIZE * (current_terminal + 1);
+			backspace_fnc(&(curr_term -> screen));
+			curr_term -> screen.video_mem -= PAGE_SIZE * (current_terminal + 1);
+			move_cursor(current_terminal, &(curr_term -> screen), PAGE_SIZE);
 			curr_term -> buf_count--;
 			curr_term -> input_len--;
 			curr_term -> line_buf[curr_term -> buf_count] = NULL_CHAR;
 		}
 	}
 	else if(curr_term -> buf_count < LINE_BUF_MAX - 1 - 1){  /* make room for newline at end */
-		putc_in_terminal(key,
-			&(curr_term -> screen_x),
-			&(curr_term -> screen_y),
-			curr_term -> video_mem + PAGE_SIZE * (current_terminal + 1)
-		);
-		move_cursor(current_terminal, curr_term -> screen_x, 
-			curr_term -> screen_y, PAGE_SIZE);
+		curr_term -> screen.video_mem += PAGE_SIZE * (current_terminal + 1);
+		putc_in_terminal(key, &(curr_term -> screen));
+		curr_term -> screen.video_mem -= PAGE_SIZE * (current_terminal + 1);
+		move_cursor(current_terminal, &(curr_term -> screen), PAGE_SIZE);
 		curr_term -> line_buf[curr_term -> buf_count] = key;
 		curr_term -> buf_count++;
 		curr_term -> input_len++;
@@ -315,18 +301,13 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
 				if(!shift && ctrl && key_out == 'l') {
-					clear_terminal(&(terminals[current_terminal].screen_x),
-						&(terminals[current_terminal].screen_y),
-						terminals[current_terminal].video_mem);
+					clear_terminal(&(terminals[current_terminal].screen));
 					for(i = 0; i < terminals[current_terminal].buf_count; i++){
 						putc_in_terminal(((int8_t *) terminals[current_terminal].line_buf)[i],
-							&(terminals[current_terminal].screen_x),
-							&(terminals[current_terminal].screen_y),
-							terminals[current_terminal].video_mem
+							&(terminals[current_terminal].screen)
 						);
 					}
-					move_cursor(current_terminal, terminals[current_terminal].screen_x,
-						terminals[current_terminal].screen_y, PAGE_SIZE);
+					move_cursor(current_terminal, &(terminals[current_terminal].screen), PAGE_SIZE);
 				}
 				else if(!ctrl && !shift && alt && key_out == KEY_F1) {
 					send_eoi(KEYBOARD_IRQ_NUM);
@@ -415,8 +396,7 @@ int32_t start_terminal(uint32_t term_num){
 
 	set_vga_start(term_num * PAGE_SIZE);
 
-	move_cursor(term_num, terminals[term_num].screen_x, 
-		terminals[term_num].screen_y, PAGE_SIZE);
+	move_cursor(term_num, &(terminals[term_num].screen), PAGE_SIZE);
 
 	/* switch processes */
 	current_terminal = term_num;

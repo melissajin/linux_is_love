@@ -23,6 +23,14 @@ static uint32_t pd_first[TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 static uint32_t pt_vidmem[MAX_TERMINALS][TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 static uint32_t pt_user_vidmem[MAX_TERMINALS][TABLE_SIZE] __attribute__((aligned (PAGE_SIZE)));
 
+/*
+ * void virtualmem_init
+ *   Description: Initialize the initial page directory and page tables used
+ *           by the kernel and initiate paging.
+ *   Inputs: none
+ *   Outputs: none
+ *   Return Value: none
+ */
 void virtualmem_init()
 {
 	int i, j;
@@ -66,6 +74,14 @@ void virtualmem_init()
 	);
 }
 
+/*
+ * void pd_init
+ *	 Description: Initialize the default page directory to have the kernel
+ *           and the correct video memory pages mapped.
+ *   Inputs: pd - a pointer to a page directory
+ *   Outputs: none
+ *   Return Value: none
+ */
 void pd_init(uint32_t * pd, int32_t term_num) {
 	int i;
 
@@ -83,6 +99,16 @@ void pd_init(uint32_t * pd, int32_t term_num) {
 	set_pde(pd, KERNEL_LOC, KERNEL_LOC, LARGE_INIT_FLAGS);
 }
 
+/*
+ * void set_pde
+ *   Description: Sets an entry in the given page directory.
+ *   Inputs: pd - a pointer to a page directory
+ *           virtual_addr - a virtual address to set the PDE for
+ *           physical_addr - the physical address to map the virtual address to
+ *           flags - the flags to set in the PDE
+ *   Outputs: none
+ *   Return Value: none
+ */
 void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags) {
 	if(flags & FLAG_PS) {
 		physical_addr &= PDE_4MB_MASK;
@@ -92,14 +118,40 @@ void set_pde(uint32_t * pd, uint32_t virtual_addr, uint32_t physical_addr, uint3
 	pd[virtual_addr >> PDE_IDX_OFFS] = physical_addr | flags;
 }
 
+/*
+ * void set_pde_flags
+ *   Description: Turns on flags in a PDE.
+ *   Inputs: pd - a pointer to a page directory
+ *           virtual_addr - a virtual address whose flags should be set
+ *           flags - the flags to turn on in the PDE
+ *   Outputs: none
+ *   Return Value: none
+ */
 void set_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags) {
 	pd[virtual_addr >> PDE_IDX_OFFS] |= flags;
 }
 
+/*
+ * void unset_pde_flags
+ *   Description: Turns off flags in a PDE.
+ *   Inputs: pd - a pointer to a page directory
+ *           virtual_addr - a virtual address whose flags should be unset
+ *           flags - the flags to turn off in the PDE
+ *   Outputs: none
+ *   Return Value: none
+ */
 void unset_pde_flags(uint32_t * pd, uint32_t virtual_addr, uint32_t flags) {
 	pd[virtual_addr >> PDE_IDX_OFFS] &= ~flags;
 }
 
+/*
+ * void set_pd
+ *   Description: Sets the page directory pointer register to point to
+ *           the given page directory and flushes the TLB.
+ *   Inputs: pd - a pointer to a page directory
+ *   Outputs: none
+ *   Return Value: none
+ */
 void set_pd(uint32_t * pd) {
 	if(pd == NULL) pd = pd_first;
 
@@ -110,14 +162,4 @@ void set_pd(uint32_t * pd) {
 		:
 		: "rm" (pd)
 	);
-}
-
-void set_vidmem_tables(uint32_t * pd, uint32_t num) {
-	uint32_t flags;
-
-	pd[0] = (uint32_t) pt_vidmem[num] | FLAG_WE | FLAG_P;
-
-	/* preserve flags for if user has called vidmap */
-	flags = pd[PROG_VIDMEM_ADDR >> PDE_IDX_OFFS] & FLAGS_MASK;
-	pd[PROG_VIDMEM_ADDR >> PDE_IDX_OFFS] = (uint32_t) pt_user_vidmem[num] | flags;
 }
