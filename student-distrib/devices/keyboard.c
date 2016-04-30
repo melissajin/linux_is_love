@@ -124,7 +124,7 @@ static int caps_lock = 0;
 
 static int32_t current_terminal = -1;
 
-fops_t term_fops = {
+static fops_t term_fops = {
 	.read = terminal_read,
 	.write = terminal_write,
 	.open = terminal_open,
@@ -328,23 +328,17 @@ void keyboard_handler_main(){
 					move_cursor(current_terminal, terminals[current_terminal].screen_x,
 						terminals[current_terminal].screen_y, PAGE_SIZE);
 				}
-				else if(!shift && ctrl && key_out == 'c') {
-					if(processes()){
-						send_eoi(KEYBOARD_IRQ_NUM);
-						halt(1);
-					}
-				}
-				else if(alt && key_out == KEY_F1) {
+				else if(!ctrl && !shift && alt && key_out == KEY_F1) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(0);
 					return;
 				}
-				else if(alt && key_out == KEY_F2) {
+				else if(!ctrl && !shift && alt && key_out == KEY_F2) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(1);
 					return;
 				}
-				else if(alt && key_out == KEY_F3) {
+				else if(!ctrl && !shift && alt && key_out == KEY_F3) {
 					send_eoi(KEYBOARD_IRQ_NUM);
 					start_terminal(2);
 					return;
