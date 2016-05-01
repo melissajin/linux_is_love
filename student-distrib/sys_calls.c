@@ -24,6 +24,20 @@
 /* helper function to parse args for execute */
 static void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t * arg_buf);
 
+/*
+int32_t halt(uint8_t status)
+DESCRIPTION: terminates a process, returning to its parent process. 
+INPUTS: 
+	-uint8_t status: the value to return to the execute of the parent process
+OUTPUTS: 
+	-8 bit return value in BL
+RETURN VALUE: 
+	-success: 0
+	-failure:-1
+SIDE EFFECTS: 
+	EBP and ESP set to that of the parents
+	closes any open files
+*/
 int32_t halt (uint8_t status) {
     pcb_t * pcb_child_ptr, * pcb_parent_ptr;
     uint32_t esp, ebp, i;
@@ -33,6 +47,7 @@ int32_t halt (uint8_t status) {
     pcb(pcb_child_ptr);
     pcb_parent_ptr = pcb_child_ptr -> parent_pcb;
 
+    /*deletes corresponding process in the processes array*/
     delete_process(pcb_child_ptr -> pid);
 
     /* close any open files */
@@ -42,11 +57,12 @@ int32_t halt (uint8_t status) {
         }
     }
 
+    /*if this process is not the base shell change necessary values to switch to parent process*/
     if(pcb_parent_ptr != NULL) {
         set_pd(pcb_parent_ptr -> pd);
         tss.esp0 = pcb_parent_ptr -> context.esp0;
         set_active_process(pcb_parent_ptr -> term_num, pcb_parent_ptr -> pid);
-    } else {
+    } else {	//if the process is the base shell, execute new shell
         set_pd(NULL);
         set_active_process(pcb_child_ptr -> term_num, -1);
         while(1) {
@@ -56,7 +72,8 @@ int32_t halt (uint8_t status) {
     
     esp = pcb_child_ptr -> esp_parent;
     ebp = pcb_child_ptr -> ebp_parent;
-
+	
+    //returning the status in %bl and restoring %esp and %ebp to that of parents
     asm volatile("              \n\
         movl    %1, %%esp       \n\
         movl    %2, %%ebp       \n\
@@ -70,6 +87,20 @@ int32_t halt (uint8_t status) {
     return 0;
 }
 
+/*
+int32_t execute(const uin8_t* command)
+DESCRIPTION: attempts to load and execute a new program. Hands off the processor to the new porgram until it terminates.
+INPUTS: 
+	const uint8_t* command: space seperated sequence of words
+		first word: name of program to run
+		second,third,fourth ...: stripped of leading spaces, provides the args if program calls for getargs system calls
+OUTPUTS: None
+RETURN VALUE:
+	-1 if command cannot be executed(no program exists or not an executable
+	256 if the program dies by an exception
+	0-255 if dies by halt call (value returned in halt)
+SIDE EFFECTS:
+*/
 int32_t execute (const uint8_t* command) {
     int8_t retval = 0;
     uint8_t command_buf[ARGS_MAX];
@@ -133,12 +164,13 @@ int32_t execute (const uint8_t* command) {
             fd.flags = 0;
             pcb->files[i] = fd;
         }
-
+	
+	//if its not a new terminal, set parent pcb to the process that calls executable
         pcb->pid = pid;
         if(curr_terminal_running_process()) {
             pcb -> parent_pcb = pcb_start;
             pcb -> term_num = pcb_start -> term_num;
-        } else {
+        } else { //used when no shell on the terminal, sets up pcb for a base shell
             pcb -> parent_pcb = NULL;
             pcb -> term_num = get_current_terminal();
         }
@@ -195,6 +227,23 @@ int32_t execute (const uint8_t* command) {
     return -1;
 }
 
+/*
+int32_t read(int32_t fd, void* buf, int32_t nbytes)
+
+DESCRIPTION: 
+	-calls the file operation read for the devices(keyboard, rtc), files and directories.
+INPUTS:
+	-int32_t fd: file descriptor number of the file(devices included) to be read
+	-void* buf: the buffer to be read into
+	-int32_t nbytes: the number of bytes to read
+OUTPUTS: 
+	-nbytes from file described by fd, is written to buf
+RETURN VALUE:
+	-number of bytes read on success
+	-0 if initial file position is beyond EOF
+	-0 if RTC_read,
+SIDE EFFECTS: none
+*/
 int32_t read (int32_t fd, void* buf, int32_t nbytes){
     pcb_t * pcb;
 
@@ -203,8 +252,6 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
 
     pcb(pcb);
 
-    // sti();
-
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> read(fd, buf, nbytes);
     }
@@ -212,6 +259,21 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes){
     return -1;
 }
 
+/*
+int32_t write(int32_t fd, const void* buf, int32_t nbytes
+DESCRIPTION:
+	-calls the file operation write for devices, files and directories
+INPUTS:
+	-int32_t fd:file descriptor number of the file/device to be written to
+	-const void* buf: the buffer to written
+	-int32_t nbytes: the number of bytes to be written
+OUTPUTS: 
+	-nbytes of buf is written to given file
+RETURN VALUE:
+	- -1 on failure
+	- number of bytes written on success
+SIDE EFFECTS: none
+*/
 int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     pcb_t * pcb;
 
@@ -220,8 +282,6 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
 
     pcb(pcb);
 
-    // sti();
-
     if(pcb -> files[fd].flags && FD_LIVE){
         return pcb -> files[fd].fops -> write(fd, buf, nbytes);
     }
@@ -229,6 +289,18 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     return -1;
 }
 
+/*
+int32_t open(const uint8_t* filename)
+DESCRIPTION: sets flags and prepares an unused file descriptor for the named file
+INPUTS:
+	-const uint8_t* filename: the name of the file to be prepped and put in the pcb
+OUTPUTS:
+	none
+RETURN VALUE:
+	-fd the corresponding index in the fd table of the pcb
+	- -1 on failure (named file does not exist, or no open file descriptors)
+SIDE EFFECTS:
+*/
 int32_t open (const uint8_t* filename){
     int i, fd = -1;
     pcb_t* pcb;
@@ -268,6 +340,7 @@ int32_t open (const uint8_t* filename){
         fd_ptr -> inode_num = dentry.inode;
     }
     
+    /*setting flags to make the file descriptor live*/
     fd_ptr -> fops = fops;
     fd_ptr -> flags = FD_LIVE;
     fd_ptr -> fops -> open(filename);
@@ -275,6 +348,18 @@ int32_t open (const uint8_t* filename){
     return fd;
 }
 
+/*
+int32_t close(uint32_t fd)
+DESCRIPTION:
+	closes the given file descriptor
+INPUTS:
+	fd - the file descriptor number to close in the pcb
+OUTPUTS:none
+RETURN VALUE:
+	0 - on success
+	-1 - on failure (invalid descriptor(stdin or stdout aka 0 or 1, out of bounds)
+SIDE EFFECTS: none
+*/
 int32_t close (int32_t fd){
     pcb_t* pcb;
     fd_t * file_desc;
@@ -285,8 +370,7 @@ int32_t close (int32_t fd){
     pcb(pcb);
     file_desc = &(pcb -> files[fd]);
 
-    // sti();
-
+	//clearing flags so the FD is set to unused state
     if(file_desc -> flags && FD_LIVE){
 
         file_desc -> fops -> close(fd);
@@ -301,13 +385,25 @@ int32_t close (int32_t fd){
     return -1;
 }
 
+/*
+int32_t getargs(uint8_t* buf, int32_t nbytes)
+DESCRIPTION: reads command line arguments into user-level buffer
+INPUTS:
+	uint8_t* buf- the user-level buffer to copy to
+	int32_t nbytes- the number of bytes to copy over
+OUTPUTS:
+	command line arguments in buf
+RETURN VALUE:
+	0 on success
+	-1 on failure(buffer is too small indicated by  nbytes)
+SIDE EFFECTS:
+*/
 int32_t getargs (uint8_t* buf, int32_t nbytes){
     pcb_t * pcb;
 
     pcb(pcb);
 
-    // sti();
-
+    //if the number of bytes is not enough then it copies nothing
     if(nbytes < (pcb -> args_len + 1)) return -1;
 
     memcpy(buf, pcb -> args, pcb -> args_len);
@@ -316,6 +412,18 @@ int32_t getargs (uint8_t* buf, int32_t nbytes){
     return 0;
 }
 
+/*
+int32_t vidmap(uint8_t** screen_start)
+DESCRIPTION: maps the text-mode video memory into user space at a preset virtual address
+INPUTS:
+	none
+OUTPUTS:
+	uint8_t** screen_start - the address at which the user should put their video memory
+RETURN VALUE:
+	the preset virtual video memory address
+SIDE EFFECTS:
+	video changes
+*/
 int32_t vidmap (uint8_t** screen_start){
     pcb_t * pcb;
 
@@ -326,18 +434,48 @@ int32_t vidmap (uint8_t** screen_start){
 
     pcb(pcb);
 
-    // sti();
-
     // set_pde_present(PROG_VIDMEM_ADDR);
     set_pde_flags(pcb -> pd, PROG_VIDMEM_ADDR, FLAG_P);
 
     return PROG_VIDMEM_ADDR;
 }
 
+/*
+int32_t set_handler(int32_t signum, void* handler_address)
+DESCRIPTION: sets handler for a particular signal
+INPUTS:
+	int32_t signum- signal number
+	void* handler_address- the address of the handler for that particular signal
+OUTPUTS:
+RETURN VALUE: -1
+SIDE EFFECTS:
+*/
 int32_t set_handler (int32_t signum, void* handler_address){ return -1; }
+
+/*
+int32_t sigreturn
+DESCRIPTION: return from a signal
+INPUTS:
+OUTPUTS:
+RETURN VALUE: -1
+SIDE EFFECTS:
+*/
 int32_t sigreturn (void){ return -1; }
 
 /* taken from given syscall material for now */
+/*
+void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t* arg_buf)
+DESCRIPTION:
+	parses the command line input
+INPUTS:
+	const uint8_t* command - the command line to parse
+	
+OUTPUTS:
+	uint8_t * command_buf - the buffer containing the command
+	uint8_t * arg_buf - the buffer containing all the arguments
+RETURN VALUE: none
+SIDE EFFECTS: none
+*/
 void parse_arg(const uint8_t* command, uint8_t* command_buf, uint8_t * arg_buf){
     uint32_t i;
 
