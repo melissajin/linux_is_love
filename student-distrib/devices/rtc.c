@@ -231,6 +231,13 @@ int32_t rtc_close(int32_t fd) {
     return 0;
 }
 
+/*
+ * void set_rate
+ *   Description: Sets the rate of the RTC given a value rate = 2^n
+ *   Inputs: fd - unused
+ *   Outputs: none
+ *   Return Value: 0 on finish
+ */
 void set_rate(int32_t rate) {
     int32_t ratefactor;
     uint8_t curr, rs = 0;  /* rate select */
@@ -250,6 +257,13 @@ void set_rate(int32_t rate) {
     sti();
 }
 
+/*
+ * void update_rtc_processes
+ *   Description: Updates the max count in each process for RTC virtualization
+ *   Inputs: fd - unused
+ *   Outputs: none
+ *   Return Value: 0 on finish
+ */
 void update_rtc_processes() {
     int i;
     for(i = 0; i < MAX_PROCESSES; i++) {

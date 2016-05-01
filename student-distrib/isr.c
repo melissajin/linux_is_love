@@ -101,7 +101,7 @@ extern void irq12();
 extern void irq13();
 extern void irq14();
 extern void irq15();
-extern void sys_call();
+extern void handle_syscall();
 
 static void irq_handler_default();
 
@@ -149,7 +149,7 @@ void isrs_install(){
 	set_trap_gate(29,  (unsigned long) isr29);
 	set_trap_gate(30,  (unsigned long) isr30);
 	set_trap_gate(31,  (unsigned long) isr31);
-	set_sys_gate(0x80, (unsigned long) sys_call);
+	set_sys_gate(0x80, (unsigned long) handle_syscall);
 
 	/* start irqs at idt entry 32 */
 	set_int_gate(32,  (unsigned long) irq0);
@@ -226,8 +226,23 @@ void sys_call_handler(int syscall){
 	while(1);
 }
 
+/*
+ * void irq_handler_default
+ *   Description: Does nothing.
+ *   Inputs: none
+ *   Outputs: none
+ *   Return Value: none
+ */
 void irq_handler_default() {}
 
+/*
+ * void add_irq
+ *   Description: Add a device handler to the IRQ jump table.
+ *   Inputs: irq - the irq number to attach the device handler to
+ *           handler_addr - the address of the device handler
+ *   Outputs: none
+ *   Return Value: none
+ */
 void add_irq(uint32_t irq, uint32_t handler_addr) {
 	if(irq < 0 || irq >= NUM_IRQS) return;
 	irq_table[irq] = handler_addr;

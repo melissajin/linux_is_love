@@ -9,13 +9,9 @@
 .global isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
 .global irq0, irq1, irq2, irq3, irq4, irq5, irq6, irq7
 .global irq8, irq9, irq10, irq11, irq12, irq13, irq14, irq15
-.global sys_call
-.global kybd_isr, rtc_isr, pit_isr
+.global handle_syscall
 
 .extern fault_handler		#assembly linkage for all our exceptions
-.extern sys_call_handler	#assembly linkage for sys calls
-.extern keyboard_handler_main	#assembly linkage for keyboard
-.extern rtc_handler_main	#assembly linkage for rtc
 .extern halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn #system calls
 
 .extern irq_table
@@ -324,104 +320,116 @@ isr31:
 	pushl $31
 	jmp handle
 
+/* stub for IRQ 0 */
 irq0:
 	pusha
 	call *irq_table+4*0
 	popa
 	iret
 
+/* stub for IRQ 1 */
 irq1:
 	pusha
 	call *irq_table+4*1
 	popa
 	iret
 
+/* stub for IRQ 2 */
 irq2:
 	pusha
 	call *irq_table+4*2
 	popa
 	iret
 
+/* stub for IRQ 3 */
 irq3:
 	pusha
 	call *irq_table+4*3
 	popa
 	iret
 
+/* stub for IRQ 4 */
 irq4:
 	pusha
 	call *irq_table+4*4
 	popa
 	iret
 
+/* stub for IRQ 5 */
 irq5:
 	pusha
 	call *irq_table+4*5
 	popa
 	iret
 
+/* stub for IRQ 6 */
 irq6:
 	pusha
 	call *irq_table+4*6
 	popa
 	iret
 
+/* stub for IRQ 7 */
 irq7:
 	pusha
 	call *irq_table+4*7
 	popa
 	iret
 
+/* stub for IRQ 8 */
 irq8:
 	pusha
 	call *irq_table+4*8
 	popa
 	iret
 
+/* stub for IRQ 9 */
 irq9:
 	pusha
 	call *irq_table+4*9
 	popa
 	iret
 
+/* stub for IRQ 10 */
 irq10:
 	pusha
 	call *irq_table+4*10
 	popa
 	iret
 
+/* stub for IRQ 11 */
 irq11:
 	pusha
 	call *irq_table+4*11
 	popa
 	iret
 
+/* stub for IRQ 12 */
 irq12:
 	pusha
 	call *irq_table+4*12
 	popa
 	iret
 
+/* stub for IRQ 13 */
 irq13:
 	pusha
 	call *irq_table+4*13
 	popa
 	iret
 
+/* stub for IRQ 14 */
 irq14:
 	pusha
 	call *irq_table+4*14
 	popa
 	iret
 
+/* stub for IRQ 15 */
 irq15:
 	pusha
 	call *irq_table+4*15
 	popa
 	iret
-
-/* stub for system calls */
-sys_call:		#preparing argument for handle_syscall
-	jmp handle_syscall
 
 .end
