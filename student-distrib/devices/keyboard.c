@@ -365,7 +365,7 @@ void keyboard_handler_main(){
 			else if(key_out == KEY_RALT) r_alt_key = 1;
 			else{
 				if(!shift && ctrl && key_out == 'l') {
-					terminals[current_terminal].screen.video_mem -= PAGE_SIZE * (current_terminal + 1);
+					terminals[current_terminal].screen.video_mem += PAGE_SIZE * (current_terminal + 1);
 					clear_terminal(&(terminals[current_terminal].screen));
 					for(i = 0; i < terminals[current_terminal].buf_count; i++){
 						putc_in_terminal(((int8_t *) terminals[current_terminal].line_buf)[i],
@@ -442,8 +442,10 @@ void keyboard_handler_main(){
 						}
 					}
 					/* if the key is not supposed to print to screen then ignore it */
-					if((key_out >= ' ' && key_out <= 'z') || (key_out == KEY_BACKSPACE))
-					update(key_out);
+					if((key_out >= ' ' && key_out <= '~') ||
+							(key_out == KEY_BACKSPACE) ||
+							(key_out == KEY_RETURN))
+						update(key_out);
 			  }
 			}
 		}
