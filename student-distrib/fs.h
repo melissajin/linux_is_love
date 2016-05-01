@@ -11,14 +11,14 @@
 
 #define BLOCK_SIZE 4096 /* kilobytes */
 #define NUM_INODES 63
-#define NUM_DATA_BLOCKS (12*NUM_INODES) /* max num data blocks per inode * number of inodes */
-#define CHARS_PER_BLOCK (4096) /* 4kB block */
+#define CHARS_PER_BLOCK 4096 /* 4kB block */
+#define BLOCKS_PER_INODE 1023
 #define FNAME_LEN 32
 #define BYTES_DENTRY 64
-#define MAX_DIR_ENTRY_CHARS (16*33)
+#define RTC_FTYPE	0
 #define DIR_FTYPE	1
 #define FILE_FTYPE	2
-#define FS_DEV_NAME "fs"
+#define TERM_FTYPE	3
 
 typedef struct dentry {
 	int8_t fname[FNAME_LEN];
@@ -37,7 +37,7 @@ typedef struct bootblock {
 
 typedef struct inode {
 	int32_t length;
-	int32_t data_block[12]; /* number based on lecture slides */
+	int32_t data_block[BLOCKS_PER_INODE]; /* number based on lecture slides */
 } inode_t;
 
 typedef struct data_block {
@@ -63,6 +63,7 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry);
 /*Lists the directory entries*/
 uint32_t read_directory(uint32_t offset, uint8_t* buf, uint32_t length);
 
+/* Reads one directory entry from the directory */
 uint32_t read_directory_entry(uint32_t dir_entry, uint8_t* buf, uint32_t length);
 
 /* Reads data in dentry starting from offset */

@@ -6,6 +6,7 @@
 #define _KEYBOARD_H
 
 #include "../types.h"
+#include "../lib.h"
 
 #define KEYBOARD_PORT     0x64
 #define KEYBOARD_PORT_DATA 0x60
@@ -167,6 +168,17 @@
 #define KEY_UNKNOWN           0x0000
 #define KEY_NUMKEYCODES       0x0000
 
+#define MAX_TERMINALS		  3
+
+typedef struct {
+	screen_t screen;
+	int8_t line_buf[LINE_BUF_MAX];
+	uint16_t buf_count;
+	int32_t input_len;
+	int8_t hit_enter;
+	int8_t reading;
+} terminal_t;
+
 // Initialize the keyboard device
 void kybd_init();
 
@@ -175,5 +187,23 @@ void update(uint16_t key);
 
 // Handles interrupts from the keyboard
 void keyboard_handler_main();
+
+// Switch to terminal number 'term_num' (0-2)
+int32_t start_terminal(uint32_t term_num);
+
+// Set the active process of the current terminal
+void set_curr_active_process(int32_t pid);
+
+// Get the active process of the current terminal
+int32_t get_curr_active_process();
+
+// Determines if the terminal you are on is running a process
+int32_t curr_terminal_running_process();
+
+// Return the terminal number the user is on
+uint32_t get_current_terminal();
+
+// Get access to a terminals structure
+terminal_t * get_terminal(int32_t term_num);
 
 #endif

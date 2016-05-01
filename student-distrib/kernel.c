@@ -8,12 +8,14 @@
 #include "i8259.h"
 #include "devices/keyboard.h"
 #include "devices/rtc.h"
+#include "devices/pit.h"
 #include "debug.h"
 #include "virtualmem.h"
 #include "isr.h"
 #include "fs.h"
 #include "sys_calls.h"
 #include "process.h"
+
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -158,7 +160,9 @@ entry (unsigned long magic, unsigned long addr)
 	 * PIC, any other initialization stuff... */
 	fs_init((module_t *)mbi->mods_addr);
 	virtualmem_init();
-	
+
+	/* Initialize IDT - must occur before other devices are initialized */
+	isrs_install();
 
 	/* Initialize keyboard: fill IDT entry for keyboard, unmask keyboard interrupt on PIC */
 	kybd_init();
@@ -166,8 +170,10 @@ entry (unsigned long magic, unsigned long addr)
 	/* Initialize RTC: fill IDT entry for RTC, unmask RTC interrupt on PIC */
 	rtc_init();
 
+	/*INitialize PIT: fill IDT entry for PIT, unmask RTC interrupt on PIC*/
+	pit_init();
+
 	/* load IDT */
-	isrs_install();
 	lidt(idt_desc_ptr);
 
 	/* Enable interrupts */
@@ -178,11 +184,8 @@ entry (unsigned long magic, unsigned long addr)
 	sti();
 
 	/* Execute the first program (`shell') ... */
-	proc_count = 0;
-	while(1) {
-		clear();
-		execute((uint8_t *) "shell");
-	}
+	clear();
+	start_terminal(0);
 
 	/* Spin (nicely, so we don't chew up cycles) */
 	asm volatile(".1: hlt; jmp .1;");
