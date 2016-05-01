@@ -51,14 +51,33 @@ typedef struct pcb {
     int32_t term_num;
 } pcb_t;
 
+/* Registers a device by adding it to the 'devices' array of fops_t*.
+ * Once a device/file is registered, it can be used by a user program. */
 int add_device(uint32_t fytpe, fops_t * fops);
+
+/* Obtains an 'fops' pointer based on the ftype. */
 fops_t * get_device_fops(uint32_t fytpe);
+
+/* adds a process to the 'procs' bitmap array. */
 int32_t add_process();
+
+/* deletes a process if the 'procs' array. */
 int32_t delete_process(int32_t pid);
+
+/* gets a pointer to the page directory corresponding
+ * to the pid of the specified process. */
 uint32_t * get_process_pd(int32_t pid);
+
+/* indicates if theres enough space in memory to add a new process */
 int32_t processes();
+
+/* gets the pid of the active process running on terminal 'term_num' */
 int32_t get_active_process(uint32_t term_num);
+
+/* sets the active_processes array at index'term_num' with the process id.*/
 int32_t set_active_process(uint32_t term_num, int32_t pid);
+
+/* indicates if theres enough space in memory to add a new process */
 int32_t free_procs();
 
 /* macro to get the  current esp */
