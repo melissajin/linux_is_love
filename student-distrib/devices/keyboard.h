@@ -191,14 +191,19 @@ void keyboard_handler_main();
 // Switch to terminal number 'term_num' (0-2)
 int32_t start_terminal(uint32_t term_num);
 
+// Set the active process of the current terminal
 void set_curr_active_process(int32_t pid);
 
+// Get the active process of the current terminal
 int32_t get_curr_active_process();
 
+// Determines if the terminal you are on is running a process
 int32_t curr_terminal_running_process();
 
+// Return the terminal number the user is on
 uint32_t get_current_terminal();
 
+// Get access to a terminals structure
 terminal_t * get_terminal(int32_t term_num);
 
 #endif
