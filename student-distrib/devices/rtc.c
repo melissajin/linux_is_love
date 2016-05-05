@@ -68,6 +68,9 @@ void rtc_init() {
     for(i = 0; i < MAX_PROCESSES; i++) {
         procs[i].rate = RATE_MIN;
     }
+
+    rtc_rate = RATE_MIN;
+    update_rtc_processes();
 }
 
 /*
